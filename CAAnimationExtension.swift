@@ -10,7 +10,6 @@ import Foundation
 
 
 public extension CAAnimation{
-    
   
     /// 透明度
     static func spOpacityAnimation(values:[CGFloat],duration:Double = 0.25) -> CAKeyframeAnimation{
