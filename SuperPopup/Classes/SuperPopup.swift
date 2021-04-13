@@ -7,6 +7,8 @@
 
 import UIKit
 import Foundation
+//彻底理解position与anchorPoint
+//https://www.cnblogs.com/benbenzhu/p/3615516.html
 
 // 封装动画类型
 public enum SPPopupType : Int, Codable{
@@ -47,7 +49,7 @@ public enum SPStepType : Int, Codable{
 }
 
 // 滑动方向
-public enum SPSlideDirection : Int, Codable{
+public enum SPFourDirection : Int, Codable{
     case none = 0
     case fromLeft
     case fromBottom
@@ -56,7 +58,7 @@ public enum SPSlideDirection : Int, Codable{
 }
 
 // 折叠展开方向
-public enum SPUnfoldDirection : Int, Codable{
+public enum SPEightDirection : Int, Codable{
     case none = 0
     case toLeftBottom
     case toLeft
@@ -66,6 +68,9 @@ public enum SPUnfoldDirection : Int, Codable{
     case toRight
     case toRightBottom
     case toBottom
+    case toLeftRight
+    case toTopBottom
+    case center
 }
 
 public let sb: CGRect = UIScreen.main.bounds
@@ -83,11 +88,11 @@ public extension UIView{
     }
     
     func sp_show(type:SPPopupType = .none,
-                 slideDirection:SPSlideDirection = .fromBottom){
+                 slideDirection:SPFourDirection = .fromBottom){
         
         print("self.layer.anchorPoint:\(self.layer.anchorPoint)")
 //        self.layer.anchorPoint = CGPoint.init(x: 0.0, y: 0.0)
-        self.setAnchorPoint(point: CGPoint.init(x: 1.0, y: 0.5), forView: self)
+        self.setAnchorPoint(point: CGPoint.init(x: 0.5, y: 0.5), forView: self)
         
         if type == .alpha {
             self.layer.add(self.packageAlphaAnimation(step: .show), forKey: "show_alpha")
@@ -103,17 +108,18 @@ public extension UIView{
                 self.layer.mask = shapeLayer
             }
             shapeLayer.path = UIBezierPath.init(rect: self.calculateFold(targetSize: self.frame.size, unfoldDirection: .toBottom, show: true)).cgPath
-            shapeLayer.add(self.packageFoldAnimation(step: .show,unfoldDirection: .toBottom), forKey: "show_fold")
+            shapeLayer.add(self.packageFoldAnimation(step: .show,unfoldDirection: .center), forKey: "show_fold")
         }else if type == .bubble {
             
+            self.layer.add(self.packageBubbleAnimation(step: .show, pinPoint: CGPoint.init(x: 100, y: 100), targetSize: self.frame.size, bubbleDirection: .toBottom), forKey: "show_bubble")
+
         }else if type == .mask {
             
         }
         
     }
     
-    //彻底理解position与anchorPoint
-    //https://www.cnblogs.com/benbenzhu/p/3615516.html
+
     func setAnchorPoint(point:CGPoint,forView:UIView){
         let oldFrame = forView.frame
         forView.layer.anchorPoint = point
@@ -121,7 +127,7 @@ public extension UIView{
     }
     
     func sp_hide(type:SPPopupType = .none,
-                 slideDirection:SPSlideDirection = .fromBottom){
+                 slideDirection:SPFourDirection = .fromBottom){
         
         if type == .alpha {
             self.layer.add(self.packageAlphaAnimation(step: .hide), forKey: "show_alpha")
@@ -136,8 +142,10 @@ public extension UIView{
             }else{
                 self.layer.mask = shapeLayer
             }
-            shapeLayer.add(self.packageFoldAnimation(step: .hide,unfoldDirection: .toBottom), forKey: "show_fold")
+            shapeLayer.add(self.packageFoldAnimation(step: .hide,unfoldDirection: .center), forKey: "show_fold")
         }else if type == .bubble {
+            
+            self.layer.add(self.packageBubbleAnimation(step: .hide, pinPoint: CGPoint.init(x: 100, y: 100), targetSize: self.frame.size, bubbleDirection: .toLeft), forKey: "show_bubble")
             
         }else if type == .mask {
             
@@ -145,30 +153,33 @@ public extension UIView{
     }
 
     // 打包 bubble 封装动画类型
-    func packageBubbleAnimation(step:SPStepType,unfoldDirection:SPUnfoldDirection = .toBottom) -> CAAnimationGroup {
-
+    func packageBubbleAnimation(step:SPStepType,pinPoint:CGPoint,targetSize:CGSize,bubbleDirection:SPEightDirection = .toBottom) -> CAAnimationGroup {
+        
         let group:CAAnimationGroup = self.spAnimationGroup()
-//
-//        var from:CGRect = CGRect.zero
-//        var to:CGRect = CGRect.zero
-//
-//        if step == .show {
-//            from = self.calculateFold(targetSize: self.frame.size, unfoldDirection: unfoldDirection, show: false)
-//            to = self.calculateFold(targetSize: self.frame.size, unfoldDirection: unfoldDirection, show: true)
-//        }else if step == .hide{
-//            from = self.calculateFold(targetSize: self.frame.size, unfoldDirection: unfoldDirection, show: true)
-//            to = self.calculateFold(targetSize: self.frame.size, unfoldDirection: unfoldDirection, show: false)
-//        }
-//        let fromPath = UIBezierPath.init(rect: from)
-//        let toPath = UIBezierPath.init(rect: to)
-//        let ani = CAAnimation.spPathAnimation(values: [fromPath,toPath], duration: 1)
-//        group.animations?.append(ani)
-//
+
+        let anchorPoint = self.calculateBubble(pinPoint: pinPoint, targetSize: targetSize, bubbleDirection: bubbleDirection).0
+        let frame = self.calculateBubble(pinPoint: pinPoint, targetSize: targetSize, bubbleDirection: bubbleDirection).1
+        
+        self.frame = frame
+        self.setAnchorPoint(point: anchorPoint, forView: self)
+        
+        var from:Double = 1.0
+        var to:Double = 1.0
+        if step == .show {
+            from = 0.0
+            to = 1.0
+        }else if step == .hide{
+            from = 1.0
+            to = 0.0
+        }
+        let ani = CAAnimation.spScaleAnimation(values: [from,to], duration: 1)
+        group.animations?.append(ani)
+        
         return group
     }
     
     // 打包 fold 封装动画类型
-    func packageFoldAnimation(step:SPStepType,unfoldDirection:SPUnfoldDirection = .toBottom) -> CAAnimationGroup {
+    func packageFoldAnimation(step:SPStepType,unfoldDirection:SPEightDirection = .toBottom) -> CAAnimationGroup {
         
         let group:CAAnimationGroup = self.spAnimationGroup()
         
@@ -220,14 +231,13 @@ public extension UIView{
             let ani = CAAnimation.spScaleAnimation(values: [from,to], duration: 1)
             group.animations?.append(ani)
         }
-        
         return group
     }
     
     
     
     // 打包 slide 封装动画类型
-    func packageSlideAnimation(step:SPStepType,slideDirection:SPSlideDirection) -> CAAnimationGroup {
+    func packageSlideAnimation(step:SPStepType,slideDirection:SPFourDirection) -> CAAnimationGroup {
         
         let group:CAAnimationGroup = self.spAnimationGroup()
         

@@ -24,7 +24,7 @@ public extension UIView{
     
     
     // 根据滑动类型计算滑动的值
-    func calculatePosition(slideDirection:SPSlideDirection,show:Bool = true) -> CGPoint{
+    func calculatePosition(slideDirection:SPFourDirection,show:Bool = true) -> CGPoint{
         let halfw:CGFloat = self.frame.size.width * 0.5
         let halfh:CGFloat = self.frame.size.height * 0.5
         
@@ -65,7 +65,7 @@ public extension UIView{
     
     
     // 根据折叠类型计算折叠的值
-    func calculateFold(targetSize:CGSize,unfoldDirection:SPUnfoldDirection,show:Bool = true) -> CGRect{
+    func calculateFold(targetSize:CGSize,unfoldDirection:SPEightDirection,show:Bool = true) -> CGRect{
         
         let ss = targetSize
         var x:CGFloat = 0.0
@@ -118,9 +118,87 @@ public extension UIView{
                 y = 0
                 w = ss.width
                 h = 0
+            }else if unfoldDirection == .toLeftRight {
+                x = ss.width * 0.5
+                y = 0
+                w = 0
+                h = ss.height
+            }else if unfoldDirection == .toTopBottom {
+                x = 0
+                y = ss.height * 0.5
+                w = ss.width
+                h = 0
+            }else if unfoldDirection == .center {
+                x = ss.width * 0.5
+                y = ss.height * 0.5
+                w = 0
+                h = 0
             }
+            
+        }
+        return CGRect.init(x: x, y: y, width: w, height: h)
+    }
+    
+    
+    
+    // 根据泡泡类型计算泡泡的anchorPoint值
+    func calculateBubble(pinPoint:CGPoint,targetSize:CGSize,bubbleDirection:SPEightDirection) -> (CGPoint,CGRect){
+        
+        let ss = targetSize
+        
+        var x:CGFloat = 0.0
+        var y:CGFloat = 0.0
+        
+        var anchorPointx:CGFloat = 0.5
+        var anchorPointy:CGFloat = 0.5
+                
+        if bubbleDirection == .toLeftBottom {
+            anchorPointx = 1.0
+            anchorPointy = 0.0
+            x = pinPoint.x - ss.width
+            y = pinPoint.y
+        }else if bubbleDirection == .toLeft {
+            anchorPointx = 1.0
+            anchorPointy = 0.5
+            x = pinPoint.x - ss.width
+            y = pinPoint.y - ss.height * 0.5
+        }else if bubbleDirection == .toLeftTop {
+            anchorPointx = 1.0
+            anchorPointy = 1.0
+            x = pinPoint.x - ss.width
+            y = pinPoint.y - ss.height
+        }else if bubbleDirection == .toTop {
+            anchorPointx = 0.5
+            anchorPointy = 1.0
+            x = pinPoint.x - ss.width * 0.5
+            y = pinPoint.y - ss.height
+        }else if bubbleDirection == .toRightTop {
+            anchorPointx = 0.0
+            anchorPointy = 1.0
+            x = pinPoint.x
+            y = pinPoint.y - ss.height
+        }else if bubbleDirection == .toRight {
+            anchorPointx = 0.0
+            anchorPointy = 0.5
+            x = pinPoint.x
+            y = pinPoint.y - ss.height * 0.5
+        }else if bubbleDirection == .toRightBottom {
+            anchorPointx = 0.0
+            anchorPointy = 0.0
+            x = pinPoint.x
+            y = pinPoint.y
+        }else if bubbleDirection == .toBottom {
+            anchorPointx = 0.5
+            anchorPointy = 0.0
+            x = pinPoint.x - ss.width * 0.5
+            y = pinPoint.y
+        }else if bubbleDirection == .center {
+            anchorPointx = 0.5
+            anchorPointy = 0.5
+            x = pinPoint.x - ss.width * 0.5
+            y = pinPoint.y - ss.height * 0.5
         }
         
-        return CGRect.init(x: x, y: y, width: w, height: h)
+        return (CGPoint.init(x: anchorPointx, y: anchorPointy),CGRect.init(x: x, y: y, width: ss.width, height: ss.height))
     }
 }

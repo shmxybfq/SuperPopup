@@ -20,7 +20,7 @@ class ViewController: UIViewController {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         //self.blockView.layer.add(self.view.spAlphaAnimation(), forKey: "opacity")
            
-        let type:SPPopupType = .scale
+        let type:SPPopupType = .bubble
         if self.showed == false{
             self.blockView.sp_show(type: type)
         }else{
