@@ -70,7 +70,10 @@ public extension CAAnimation{
     /// 旋转
     static func spRotationAnimation(rotationType:SPRotationType = .z,values:[Double],duration:Double = 0.25) -> CAKeyframeAnimation{
         let ani = CAKeyframeAnimation.init()
-        ani.keyPath = "transform.rotation.y"
+        ani.keyPath = "transform.rotation.\(rotationType.description)"
+        if rotationType == .none {
+            ani.keyPath = "transform.rotation"
+        }
         ani.values = values
         ani.duration = duration
         ani.isRemovedOnCompletion = false

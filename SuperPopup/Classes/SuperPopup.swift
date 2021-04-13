@@ -38,6 +38,18 @@ public enum SPRotationType : Int, Codable{
     case x
     case y
     case z
+    public var description: String {
+        switch self {
+        case .x:
+            return "x"
+        case .y:
+            return "y"
+        case .z:
+            return "z"
+        default:
+            return ""
+        }
+    }
 }
 
 
@@ -73,52 +85,191 @@ public enum SPEightDirection : Int, Codable{
     case center
 }
 
+// 屏幕参数
 public let sb: CGRect = UIScreen.main.bounds
-
 public let sbs: CGSize = sb.size
 public let sbw: CGFloat = sb.size.width
 public let sbh: CGFloat = sb.size.height
 
-public extension UIView{
-    
-    var spparam:SPParam?{
-        get{
-            return SPParam.init()
-        }
-    }
-    
-    func sp_show(type:SPPopupType = .none,
-                 slideDirection:SPFourDirection = .fromBottom){
-        
-        print("self.layer.anchorPoint:\(self.layer.anchorPoint)")
-//        self.layer.anchorPoint = CGPoint.init(x: 0.0, y: 0.0)
-        self.setAnchorPoint(point: CGPoint.init(x: 0.5, y: 0.5), forView: self)
-        
-        if type == .alpha {
-            self.layer.add(self.packageAlphaAnimation(step: .show), forKey: "show_alpha")
-        }else if type == .slide {
-            self.layer.add(self.packageSlideAnimation(step: .show, slideDirection: slideDirection), forKey: "show_slide")
-        }else if type == .scale {
-            self.layer.add(self.packageScaleAnimation(step: .show,spring: false), forKey: "show_scale")
-        }else if type == .fold {
-            var shapeLayer = CAShapeLayer.init()
-            if let shape = self.layer.mask{
-                shapeLayer = shape as! CAShapeLayer
-            }else{
-                self.layer.mask = shapeLayer
-            }
-            shapeLayer.path = UIBezierPath.init(rect: self.calculateFold(targetSize: self.frame.size, unfoldDirection: .toBottom, show: true)).cgPath
-            shapeLayer.add(self.packageFoldAnimation(step: .show,unfoldDirection: .center), forKey: "show_fold")
-        }else if type == .bubble {
-            
-            self.layer.add(self.packageBubbleAnimation(step: .show, pinPoint: CGPoint.init(x: 100, y: 100), targetSize: self.frame.size, bubbleDirection: .toBottom), forKey: "show_bubble")
 
-        }else if type == .mask {
-            
+public class SPManager:NSObject{
+    
+    var step : SPStepType = .none
+    var target : UIView?
+    var params = [Any]()
+    
+    public func spAlphaAnimation(_ closure: (_ make: SPAlphaParam ) -> Void) {
+        let param = SPAlphaParam()
+        param.type = .alpha
+        if self.step == .none {
+            return
+        }else{
+            param.from = self.target?.alpha ?? 0.0
+            param.to = (self.step == .show) ? 1.0 : 0.0
         }
-        
+        self.params.append(param)
+        closure(param)
     }
     
+    public func spSlideAnimation(_ closure: (_ make: SPSlideParam ) -> Void) {
+        let param = SPSlideParam()
+        param.type = .slide
+        param.slideDirection = .fromBottom
+        self.params.append(param)
+        closure(param)
+    }
+    
+    public func spScaleAnimation(_ closure: (_ make: SPScaleParam ) -> Void) {
+        let param = SPScaleParam()
+        param.type = .scale
+        param.spring = false
+        if self.step == .none {
+            return
+        }else{
+            param.from = (self.step == .show) ? 0.0 : 1.0
+            param.to = (self.step == .show) ? 1.0 : 0.0
+        }
+        self.params.append(param)
+        closure(param)
+    }
+    
+    public func spFoldAnimation(_ closure: (_ make: SPFoldParam ) -> Void) {
+        let param = SPFoldParam()
+        param.type = .fold
+        param.targetSize = self.target?.frame.size ?? CGSize.zero
+        param.unfoldDirection = .toBottom
+        self.params.append(param)
+        closure(param)
+    }
+    
+    public func spBubbleAnimation(_ closure: (_ make: SPBubbleParam ) -> Void) -> SPManager {
+        let param = SPBubbleParam()
+        param.type = .bubble
+        param.pinPoint = CGPoint.init(x: self.target?.frame.size.width ?? 0, y: 0)
+        param.targetSize = self.target?.frame.size ?? CGSize.zero
+        param.bubbleDirection = .toLeftBottom
+        self.params.append(param)
+        closure(param)
+        return self
+    }
+    
+    public func finish() {
+        self.target?.spMain(self)
+    }
+}
+
+public protocol SPDataSource:NSObjectProtocol {
+    
+    func numberOfAnimation(_ spview:UIView,_ param:SPBaseParam) -> Int
+    
+    func animationForIndex(_ spview:UIView,_ param:SPBaseParam,index:Int) -> CAAnimation
+    
+}
+
+extension UIView:SPDataSource{
+    
+    public func numberOfAnimation(_ spview:UIView,_ param:SPBaseParam) -> Int {
+        if param.type == .alpha {
+            return 1
+        }else if param.type == .slide {
+            return 1
+        }else if param.type == .scale {
+            return 1
+        }else if param.type == .fold {
+            return 1
+        }else if param.type == .bubble {
+            return 1
+        }else if param.type == .mask {
+            return 1
+        }else if param.type == .other {
+            return 0
+        }
+        return 0
+    }
+    
+    public func animationForIndex(_ spview:UIView,_ param:SPBaseParam,index:Int) -> CAAnimation {
+//        if type == .alpha {
+//            return 1
+//        }else if type == .slide {
+//            return 1
+//        }else if type == .scale {
+//            return 1
+//        }else if type == .fold {
+//            return 1
+//        }else if type == .bubble {
+//            return 1
+//        }else if type == .mask {
+//            return 1
+//        }else if type == .other {
+//            return 0
+//        }
+//        return 0
+    }
+    
+    
+    
+  
+    
+
+    var spshow: SPManager {
+        self.spManager.step = .show
+        self.spManager.target = self
+        self.spDataSource = self
+        return self.spManager
+    }
+
+    var sphide: SPManager {
+        self.spManager.step = .hide
+        self.spManager.target = self
+        self.spDataSource = self
+        return self.spManager
+    }
+    
+    
+    func spMain(_ manager:SPManager){
+        
+        let count:Int = self.spDataSource?.numberOfAnimation(self) ?? 0
+        
+        for index in 0..<count {
+            let animation = self.spDataSource?.animationForIndex(self, index: index)
+        }
+        
+        for (_,popupType) in manager.popupTypes.enumerated() {
+            
+            if popupType == .none {
+                return
+            }else if popupType == .alpha {
+                if let param = manager.alphaParam {
+                    
+                    self.layer.add(self.packageAlphaAnimation(step: manager.step, from: param.from, to: param.to), forKey: "show_alpha")
+                }
+            }else if popupType == .slide {
+                if let param = manager.slideParam {
+                    self.layer.add(self.packageSlideAnimation(step: manager.step, slideDirection: param.slideDirection), forKey: "show_slide")
+                }
+            }else if popupType == .scale {
+                if let param = manager.scaleParam {
+                    self.layer.add(self.packageScaleAnimation(step: manager.step,spring: param.spring), forKey: "show_scale")
+                }
+            }else if popupType == .fold {
+                if let param = manager.foldParam {
+                    var shapeLayer = CAShapeLayer.init()
+                    if let shape = self.layer.mask{
+                        shapeLayer = shape as! CAShapeLayer
+                    }else{
+                        self.layer.mask = shapeLayer
+                    }
+                    shapeLayer.path = UIBezierPath.init(rect: self.calculateFold(targetSize: param.targetSize, unfoldDirection: param.unfoldDirection, show: manager.step == .show)).cgPath
+                    shapeLayer.add(self.packageFoldAnimation(step: manager.step,unfoldDirection: param.unfoldDirection), forKey: "show_fold")
+                }
+            }else if popupType == .bubble {
+                if let param = manager.bubbleParam {
+                    self.layer.add(self.packageBubbleAnimation(step: manager.step, pinPoint: param.pinPoint, targetSize: param.targetSize, bubbleDirection: param.bubbleDirection), forKey: "show_bubble")
+                }
+            }
+        }
+    }
+ 
 
     func setAnchorPoint(point:CGPoint,forView:UIView){
         let oldFrame = forView.frame
@@ -126,31 +277,6 @@ public extension UIView{
         forView.frame = oldFrame
     }
     
-    func sp_hide(type:SPPopupType = .none,
-                 slideDirection:SPFourDirection = .fromBottom){
-        
-        if type == .alpha {
-            self.layer.add(self.packageAlphaAnimation(step: .hide), forKey: "show_alpha")
-        }else if type == .slide {
-            self.layer.add(self.packageSlideAnimation(step: .hide, slideDirection: slideDirection), forKey: "show_slide")
-        }else if type == .scale {
-            self.layer.add(self.packageScaleAnimation(step: .hide,spring: false), forKey: "show_scale")
-        }else if type == .fold {
-            var shapeLayer = CAShapeLayer.init()
-            if let shape = self.layer.mask{
-                shapeLayer = shape as! CAShapeLayer
-            }else{
-                self.layer.mask = shapeLayer
-            }
-            shapeLayer.add(self.packageFoldAnimation(step: .hide,unfoldDirection: .center), forKey: "show_fold")
-        }else if type == .bubble {
-            
-            self.layer.add(self.packageBubbleAnimation(step: .hide, pinPoint: CGPoint.init(x: 100, y: 100), targetSize: self.frame.size, bubbleDirection: .toLeft), forKey: "show_bubble")
-            
-        }else if type == .mask {
-            
-        }
-    }
 
     // 打包 bubble 封装动画类型
     func packageBubbleAnimation(step:SPStepType,pinPoint:CGPoint,targetSize:CGSize,bubbleDirection:SPEightDirection = .toBottom) -> CAAnimationGroup {
@@ -259,19 +385,10 @@ public extension UIView{
     
     
     
-    
     // 打包 alpha 封装动画类型
-    func packageAlphaAnimation(step:SPStepType) -> CAAnimationGroup {
+    func packageAlphaAnimation(step:SPStepType,from:CGFloat,to:CGFloat) -> CAAnimationGroup {
         let group:CAAnimationGroup = self.spAnimationGroup()
-        var from:CGFloat = 1
-        var to:CGFloat = 1
-        if step == .show {
-            from = 0.0
-            to = 1.0
-        }else if step == .hide{
-            from = 0.0
-            to = 1.0
-        }
+        
         let ani = CAAnimation.spOpacityAnimation(values: [from,to], duration: 1)
         group.animations?.append(ani)
         return group
@@ -280,4 +397,3 @@ public extension UIView{
     
 
 }
-

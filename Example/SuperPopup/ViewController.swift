@@ -21,11 +21,11 @@ class ViewController: UIViewController {
         //self.blockView.layer.add(self.view.spAlphaAnimation(), forKey: "opacity")
            
         let type:SPPopupType = .bubble
-        if self.showed == false{
-            self.blockView.sp_show(type: type)
-        }else{
-            self.blockView.sp_hide(type: type)
-        }
+//        if self.showed == false{
+//            self.blockView.spshow.
+//        }else{
+//            self.blockView.sp_hide(type: type)
+//        }
         self.showed = !self.showed
     }
 

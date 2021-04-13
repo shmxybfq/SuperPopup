@@ -8,9 +8,58 @@
 import UIKit
 import Foundation
 
-public class SPParam:NSObject{
+public class SPBubbleParam:SPBaseParam{
+    // 基本点
+    var pinPoint : CGPoint = CGPoint.zero
+    // 泡泡尺寸
+    public var targetSize:CGSize = CGSize.zero
+    // 泡泡展开方向
+    public var bubbleDirection:SPEightDirection = .none
+}
+
+public class SPFoldParam:SPBaseParam{
+    // view尺寸
+    public var targetSize:CGSize = CGSize.zero
+    // 展开方向
+    public var unfoldDirection:SPEightDirection = .none
+}
+
+public class SPScaleParam:SPBaseParam{
+    // 起始scale值:0.0 - 1.0
+    public var from:CGFloat = 1.0
+    // 结束scale值:0.0 - 1.0
+    public var to:CGFloat = 1.0
+    // 是否模仿系统alert弹窗效果
+    public var spring:Bool = false
+    
+}
+
+
+public class SPSlideParam:SPBaseParam{
+    // 滑动方向
+    public var slideDirection:SPFourDirection = .none
+}
+
+
+public class SPAlphaParam:SPBaseParam{
+    // 起始alpha值:0.0 - 1.0
+    public var from:CGFloat = 1.0
+    // 结束alpha值:0.0 - 1.0
+    public var to:CGFloat = 1.0
+}
+
+
+public class SPBaseParam:NSObject{
     // 动画时间
-    var duration:Double = 0.25
+    public var duration : Double = 0.25
     // 位置偏移量
-    var offset:CGPoint = CGPoint.zero
+    public var offset : CGPoint = CGPoint.zero
+    // 延时
+    public var delay:TimeInterval = 0.0
+    // 动画类型
+    public var type:SPPopupType = .none
+    // 动画数量
+    public var count:Int = 0
+    // 动画数组
+    public var animations = [CAAnimation]()
 }

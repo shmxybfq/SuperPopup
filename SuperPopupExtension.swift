@@ -8,7 +8,33 @@
 import UIKit
 import Foundation
 
+let kSpManagerKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kSpManagerKey".hashValue)
+let kSpDataSourceKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kSpDataSourceKey".hashValue)
 public extension UIView{
+    
+    var spManager:SPManager{
+        get {
+            var spManager = objc_getAssociatedObject(self, kSpManagerKey) as? SPManager
+            if spManager == nil {
+                spManager = SPManager.init()
+                self.spManager = spManager!
+            }
+            return spManager!
+        }
+        set {
+            objc_setAssociatedObject(self, kSpManagerKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
+    }
+    
+    var spDataSource:SPDataSource?{
+        get {
+            let spDataSource = objc_getAssociatedObject(self, kSpDataSourceKey) as? SPDataSource
+            return spDataSource
+        }
+        set {
+            objc_setAssociatedObject(self, kSpDataSourceKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_ASSIGN)
+        }
+    }
     
     // 创建一个动画组壳
     func spAnimationGroup() -> CAAnimationGroup {
