@@ -1,0 +1,6 @@
+framework module Pods_SuperPopup_Tests {
+  umbrella header "Pods-SuperPopup_Tests-umbrella.h"
+
+  export *
+  module * { export * }
+}
