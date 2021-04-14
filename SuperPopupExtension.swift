@@ -10,6 +10,8 @@ import Foundation
 
 let kSpManagerKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kSpManagerKey".hashValue)
 let kSpDataSourceKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kSpDataSourceKey".hashValue)
+let kShowAnimationsKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kShowAnimationsKey".hashValue)
+let kHideAnimationsKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kHideAnimationsKey".hashValue)
 public extension UIView{
     
     var spManager:SPManager{
@@ -19,7 +21,7 @@ public extension UIView{
                 spManager = SPManager.init()
                 self.spManager = spManager!
             }
-            return spManager!
+            return spManager ?? SPManager.init()
         }
         set {
             objc_setAssociatedObject(self, kSpManagerKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
@@ -36,10 +38,38 @@ public extension UIView{
         }
     }
     
+    var showAnimations: Dictionary <String,CAAnimation>{
+        get {
+            var showAnimations = objc_getAssociatedObject(self, kShowAnimationsKey) as? Dictionary<String,CAAnimation>
+            if showAnimations == nil {
+                showAnimations = Dictionary <String,CAAnimation>()
+                self.showAnimations = showAnimations!
+            }
+            return showAnimations ?? Dictionary <String,CAAnimation>()
+        }
+        set {
+            objc_setAssociatedObject(self, kShowAnimationsKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN)
+        }
+    }
+    
+    var hideAnimations: Dictionary <String,CAAnimation>{
+        get {
+            var hideAnimations = objc_getAssociatedObject(self, kHideAnimationsKey) as? Dictionary<String,CAAnimation>
+            if hideAnimations == nil {
+                hideAnimations = Dictionary <String,CAAnimation>()
+                self.hideAnimations = hideAnimations!
+            }
+            return hideAnimations ?? Dictionary <String,CAAnimation>()
+        }
+        set {
+            objc_setAssociatedObject(self, kHideAnimationsKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN)
+        }
+    }
+    
     // 创建一个动画组壳
     func spAnimationGroup() -> CAAnimationGroup {
         let group:CAAnimationGroup = CAAnimationGroup.init()
-        group.duration = 1
+        group.duration = 0.25
         group.isRemovedOnCompletion = false
         group.timingFunction = CAMediaTimingFunction.init(name: kCAMediaTimingFunctionDefault)
         group.autoreverses = false
@@ -227,4 +257,12 @@ public extension UIView{
         
         return (CGPoint.init(x: anchorPointx, y: anchorPointy),CGRect.init(x: x, y: y, width: ss.width, height: ss.height))
     }
+    
+    func setAnchorPoint(point:CGPoint,forView:UIView){
+        let oldFrame = forView.frame
+        forView.layer.anchorPoint = point
+        forView.frame = oldFrame
+    }
+    
+
 }

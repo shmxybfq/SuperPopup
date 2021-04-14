@@ -30,6 +30,7 @@ public enum SPBaseAnimationType : Int, Codable{
     case size
     case scale
     case rotation
+    case path
 }
 
 // 旋转类型
@@ -84,7 +85,11 @@ public enum SPEightDirection : Int, Codable{
     case toTopBottom
     case center
 }
-
+// 泡泡类型
+public enum SPBubbleType : Int, Codable{
+    case scale = 0
+    case mask
+}
 // 屏幕参数
 public let sb: CGRect = UIScreen.main.bounds
 public let sbs: CGSize = sb.size
@@ -98,48 +103,44 @@ public class SPManager:NSObject{
     var target : UIView?
     var params = [Any]()
     
-    public func spAlphaAnimation(_ closure: (_ make: SPAlphaParam ) -> Void) {
+    public func spAlphaAnimation(_ closure: (_ make: SPAlphaParam ) -> Void) -> SPManager {
         let param = SPAlphaParam()
         param.type = .alpha
-        if self.step == .none {
-            return
-        }else{
-            param.from = self.target?.alpha ?? 0.0
-            param.to = (self.step == .show) ? 1.0 : 0.0
-        }
+        param.from = self.target?.alpha ?? 0.0
+        param.to = (self.step == .show) ? 1.0 : 0.0
         self.params.append(param)
         closure(param)
+        return self
     }
     
-    public func spSlideAnimation(_ closure: (_ make: SPSlideParam ) -> Void) {
+    public func spSlideAnimation(_ closure: (_ make: SPSlideParam ) -> Void) -> SPManager {
         let param = SPSlideParam()
         param.type = .slide
         param.slideDirection = .fromBottom
         self.params.append(param)
         closure(param)
+        return self
     }
     
-    public func spScaleAnimation(_ closure: (_ make: SPScaleParam ) -> Void) {
+    public func spScaleAnimation(_ closure: (_ make: SPScaleParam ) -> Void = {_ in }) -> SPManager {
         let param = SPScaleParam()
         param.type = .scale
         param.spring = false
-        if self.step == .none {
-            return
-        }else{
-            param.from = (self.step == .show) ? 0.0 : 1.0
-            param.to = (self.step == .show) ? 1.0 : 0.0
-        }
+        param.from = (self.step == .show) ? 0.0 : 1.0
+        param.to = (self.step == .show) ? 1.0 : 0.0
         self.params.append(param)
         closure(param)
+        return self
     }
     
-    public func spFoldAnimation(_ closure: (_ make: SPFoldParam ) -> Void) {
+    public func spFoldAnimation(_ closure: (_ make: SPFoldParam ) -> Void) -> SPManager {
         let param = SPFoldParam()
         param.type = .fold
         param.targetSize = self.target?.frame.size ?? CGSize.zero
         param.unfoldDirection = .toBottom
         self.params.append(param)
         closure(param)
+        return self
     }
     
     public func spBubbleAnimation(_ closure: (_ make: SPBubbleParam ) -> Void) -> SPManager {
@@ -160,65 +161,23 @@ public class SPManager:NSObject{
 
 public protocol SPDataSource:NSObjectProtocol {
     
-    func numberOfAnimation(_ spview:UIView,_ param:SPBaseParam) -> Int
+    func animationTypes(_ spview:UIView,_ step:SPStepType,_ param:Any) -> [SPBaseAnimationType]
     
-    func animationForIndex(_ spview:UIView,_ param:SPBaseParam,index:Int) -> CAAnimation
+    func animationForIndex(_ spview:UIView,_ step:SPStepType,_ param:Any,type:SPBaseAnimationType,index:Int) -> CAAnimation?
     
 }
 
 extension UIView:SPDataSource{
     
-    public func numberOfAnimation(_ spview:UIView,_ param:SPBaseParam) -> Int {
-        if param.type == .alpha {
-            return 1
-        }else if param.type == .slide {
-            return 1
-        }else if param.type == .scale {
-            return 1
-        }else if param.type == .fold {
-            return 1
-        }else if param.type == .bubble {
-            return 1
-        }else if param.type == .mask {
-            return 1
-        }else if param.type == .other {
-            return 0
-        }
-        return 0
-    }
     
-    public func animationForIndex(_ spview:UIView,_ param:SPBaseParam,index:Int) -> CAAnimation {
-//        if type == .alpha {
-//            return 1
-//        }else if type == .slide {
-//            return 1
-//        }else if type == .scale {
-//            return 1
-//        }else if type == .fold {
-//            return 1
-//        }else if type == .bubble {
-//            return 1
-//        }else if type == .mask {
-//            return 1
-//        }else if type == .other {
-//            return 0
-//        }
-//        return 0
-    }
-    
-    
-    
-  
-    
-
-    var spshow: SPManager {
+    public var spshow: SPManager {
         self.spManager.step = .show
         self.spManager.target = self
         self.spDataSource = self
         return self.spManager
     }
 
-    var sphide: SPManager {
+    public var sphide: SPManager {
         self.spManager.step = .hide
         self.spManager.target = self
         self.spDataSource = self
@@ -226,125 +185,145 @@ extension UIView:SPDataSource{
     }
     
     
+    
     func spMain(_ manager:SPManager){
         
-        let count:Int = self.spDataSource?.numberOfAnimation(self) ?? 0
-        
-        for index in 0..<count {
-            let animation = self.spDataSource?.animationForIndex(self, index: index)
-        }
-        
-        for (_,popupType) in manager.popupTypes.enumerated() {
-            
-            if popupType == .none {
-                return
-            }else if popupType == .alpha {
-                if let param = manager.alphaParam {
-                    
-                    self.layer.add(self.packageAlphaAnimation(step: manager.step, from: param.from, to: param.to), forKey: "show_alpha")
-                }
-            }else if popupType == .slide {
-                if let param = manager.slideParam {
-                    self.layer.add(self.packageSlideAnimation(step: manager.step, slideDirection: param.slideDirection), forKey: "show_slide")
-                }
-            }else if popupType == .scale {
-                if let param = manager.scaleParam {
-                    self.layer.add(self.packageScaleAnimation(step: manager.step,spring: param.spring), forKey: "show_scale")
-                }
-            }else if popupType == .fold {
-                if let param = manager.foldParam {
-                    var shapeLayer = CAShapeLayer.init()
-                    if let shape = self.layer.mask{
-                        shapeLayer = shape as! CAShapeLayer
-                    }else{
-                        self.layer.mask = shapeLayer
+        for param in manager.params {
+            if let prm = param as? SPBaseParam {
+                let types = self.spDataSource?.animationTypes(self, manager.step, prm) ?? []
+                for (index,type) in types.enumerated() {
+                    let animation = self.spDataSource?.animationForIndex(self, manager.step, prm, type: type, index: index)
+                    if animation != nil {
+                        prm.typeAnimations[type] = animation
                     }
-                    shapeLayer.path = UIBezierPath.init(rect: self.calculateFold(targetSize: param.targetSize, unfoldDirection: param.unfoldDirection, show: manager.step == .show)).cgPath
-                    shapeLayer.add(self.packageFoldAnimation(step: manager.step,unfoldDirection: param.unfoldDirection), forKey: "show_fold")
-                }
-            }else if popupType == .bubble {
-                if let param = manager.bubbleParam {
-                    self.layer.add(self.packageBubbleAnimation(step: manager.step, pinPoint: param.pinPoint, targetSize: param.targetSize, bubbleDirection: param.bubbleDirection), forKey: "show_bubble")
                 }
             }
         }
-    }
- 
-
-    func setAnchorPoint(point:CGPoint,forView:UIView){
-        let oldFrame = forView.frame
-        forView.layer.anchorPoint = point
-        forView.frame = oldFrame
-    }
-    
-
-    // 打包 bubble 封装动画类型
-    func packageBubbleAnimation(step:SPStepType,pinPoint:CGPoint,targetSize:CGSize,bubbleDirection:SPEightDirection = .toBottom) -> CAAnimationGroup {
         
-        let group:CAAnimationGroup = self.spAnimationGroup()
-
-        let anchorPoint = self.calculateBubble(pinPoint: pinPoint, targetSize: targetSize, bubbleDirection: bubbleDirection).0
-        let frame = self.calculateBubble(pinPoint: pinPoint, targetSize: targetSize, bubbleDirection: bubbleDirection).1
-        
-        self.frame = frame
-        self.setAnchorPoint(point: anchorPoint, forView: self)
-        
-        var from:Double = 1.0
-        var to:Double = 1.0
-        if step == .show {
-            from = 0.0
-            to = 1.0
-        }else if step == .hide{
-            from = 1.0
-            to = 0.0
-        }
-        let ani = CAAnimation.spScaleAnimation(values: [from,to], duration: 1)
-        group.animations?.append(ani)
-        
-        return group
-    }
-    
-    // 打包 fold 封装动画类型
-    func packageFoldAnimation(step:SPStepType,unfoldDirection:SPEightDirection = .toBottom) -> CAAnimationGroup {
-        
-        let group:CAAnimationGroup = self.spAnimationGroup()
-        
-        var from:CGRect = CGRect.zero
-        var to:CGRect = CGRect.zero
-
-        if step == .show {
-            from = self.calculateFold(targetSize: self.frame.size, unfoldDirection: unfoldDirection, show: false)
-            to = self.calculateFold(targetSize: self.frame.size, unfoldDirection: unfoldDirection, show: true)
-        }else if step == .hide{
-            from = self.calculateFold(targetSize: self.frame.size, unfoldDirection: unfoldDirection, show: true)
-            to = self.calculateFold(targetSize: self.frame.size, unfoldDirection: unfoldDirection, show: false)
-        }
-        let fromPath = UIBezierPath.init(rect: from)
-        let toPath = UIBezierPath.init(rect: to)
-        let ani = CAAnimation.spPathAnimation(values: [fromPath,toPath], duration: 1)
-        group.animations?.append(ani)
-
-        return group
-    }
-    
-    
-    // 打包 scale 封装动画类型
-    func packageScaleAnimation(step:SPStepType,spring:Bool = false) -> CAAnimationGroup {
-        self.setAnchorPoint(point: CGPoint.init(x: 0.5, y: 0.5), forView: self)
-        let group:CAAnimationGroup = self.spAnimationGroup()
-        if spring {
-            var values:[Double] = []
-            values.append(0.0)
-            values.append(1.2)
-            values.append(0.9)
-            values.append(1.0)
-            if step == .hide {
-                values.reverse()
+        var anis = [CAAnimation]()
+        for (_,param) in manager.params.enumerated() {
+            if let prm = param as? SPBaseParam {
+                for (_,animation) in prm.typeAnimations {
+                    anis.append(animation)
+                }
             }
-            let ani = CAAnimation.spScaleAnimation(values: values, duration: 1)
-            group.animations?.append(ani)
+        }
+        let group = self.spAnimationGroup()
+        group.animations = anis
+        
+        self.layer.add(group, forKey: manager.step == .show ? "spshow" : "sphide")
+        
+    }
+        
+    
+    public func animationTypes(_ spview: UIView, _ step: SPStepType, _ param: Any) -> [SPBaseAnimationType] {
+        if let baseParam = param as? SPBaseParam{
+            if baseParam.type == .none {
+                return [.none]
+            }else if baseParam.type == .alpha {
+                return [.opacity]
+            }else if baseParam.type == .slide {
+                return [.position]
+            }else if baseParam.type == .scale {
+                return [.scale]
+            }else if baseParam.type == .fold {
+                return [.path]
+            }else if baseParam.type == .bubble,let bubbleParam = baseParam as? SPBubbleParam {
+                if bubbleParam.bubbleType == .mask {
+                    return [.path]
+                }else{
+                    return [.scale]
+                }
+            }else if baseParam.type == .mask {
+                return [.path]
+            }else if baseParam.type == .other {
+                return [.none]
+            }
+        }
+        return []
+    }
+  
+    public func animationForIndex(_ spview: UIView, _ step: SPStepType, _ param: Any, type: SPBaseAnimationType, index: Int) -> CAAnimation? {
+        var animation:CAAnimation? = nil
+        if type == .none {
+            let from:CGFloat = self.alpha
+            var to:CGFloat = self.alpha
+            if step == .show {
+                to = 1.0
+            }else if step == .show {
+                to = 0.0
+            }
+            animation = CAAnimation.spOpacityAnimation(values: [from,to], duration: 1)
+            
+        }else if type == .opacity,let alphaParam = param as? SPAlphaParam {
+            
+            animation = CAAnimation.spOpacityAnimation(values: [alphaParam.from,alphaParam.to], duration: 1)
+            
+        }else if type == .position,let slideParam = param as? SPSlideParam {
+            
+            var from:CGPoint = CGPoint.zero
+            var to:CGPoint = CGPoint.zero
+            if step == .show {
+                from = self.calculatePosition(slideDirection: slideParam.slideDirection, show: true)
+                to = self.calculatePosition(slideDirection: slideParam.slideDirection, show: false)
+            }else if step == .hide{
+                from = self.calculatePosition(slideDirection: slideParam.slideDirection, show: false)
+                to = self.calculatePosition(slideDirection: slideParam.slideDirection, show: true)
+            }
+            animation = CAAnimation.spPositionAnimation(values: [from,to], duration: 1)
+            
+        }else if type == .scale,let scaleParam = param as? SPScaleParam {
+            
+            self.setAnchorPoint(point: CGPoint.init(x: 0.5, y: 0.5), forView: self)
+            
+            if scaleParam.spring {
+                var values:[Double] = []
+                values.append(0.0)
+                values.append(1.2)
+                values.append(0.9)
+                values.append(1.0)
+                if step == .hide {
+                    values.reverse()
+                }
+                animation = CAAnimation.spScaleAnimation(values: values, duration: 1)
+            }else{
+                var from:Double = 1.0
+                var to:Double = 1.0
+                if step == .show {
+                    from = 0.0
+                    to = 1.0
+                }else if step == .hide{
+                    from = 1.0
+                    to = 0.0
+                }
+                animation = CAAnimation.spScaleAnimation(values: [from,to], duration: 1)
+            }
+            
+        }else if type == .path,let foldParam = param as? SPFoldParam {
+            
+            var from:CGRect = CGRect.zero
+            var to:CGRect = CGRect.zero
 
-        }else{
+            if step == .show {
+                from = self.calculateFold(targetSize: self.frame.size, unfoldDirection: foldParam.unfoldDirection, show: false)
+                to = self.calculateFold(targetSize: self.frame.size, unfoldDirection: foldParam.unfoldDirection, show: true)
+            }else if step == .hide{
+                from = self.calculateFold(targetSize: self.frame.size, unfoldDirection: foldParam.unfoldDirection, show: true)
+                to = self.calculateFold(targetSize: self.frame.size, unfoldDirection: foldParam.unfoldDirection, show: false)
+            }
+            let fromPath = UIBezierPath.init(rect: from)
+            let toPath = UIBezierPath.init(rect: to)
+            animation = CAAnimation.spPathAnimation(values: [fromPath,toPath], duration: 1)
+            
+        }else if type == .path,let bubbleParam = param as? SPBubbleParam,bubbleParam.bubbleType == .scale {
+            
+            let anchorPoint = self.calculateBubble(pinPoint: bubbleParam.pinPoint, targetSize: bubbleParam.targetSize, bubbleDirection: bubbleParam.bubbleDirection).0
+            let frame = self.calculateBubble(pinPoint: bubbleParam.pinPoint, targetSize: bubbleParam.targetSize, bubbleDirection: bubbleParam.bubbleDirection).1
+            
+            self.frame = frame
+            
+            self.setAnchorPoint(point: anchorPoint, forView: self)
+            
             var from:Double = 1.0
             var to:Double = 1.0
             if step == .show {
@@ -354,46 +333,34 @@ extension UIView:SPDataSource{
                 from = 1.0
                 to = 0.0
             }
-            let ani = CAAnimation.spScaleAnimation(values: [from,to], duration: 1)
-            group.animations?.append(ani)
-        }
-        return group
-    }
-    
-    
-    
-    // 打包 slide 封装动画类型
-    func packageSlideAnimation(step:SPStepType,slideDirection:SPFourDirection) -> CAAnimationGroup {
-        
-        let group:CAAnimationGroup = self.spAnimationGroup()
-        
-        var from:CGPoint = CGPoint.zero
-        var to:CGPoint = CGPoint.zero
+            animation = CAAnimation.spScaleAnimation(values: [from,to], duration: 1)
+            
+        }else if type == .path,let bubbleParam = param as? SPBubbleParam,bubbleParam.bubbleType == .mask {
+            
+            var from:CGRect = CGRect.zero
+            var to:CGRect = CGRect.zero
 
-        if step == .show {
-            from = self.calculatePosition(slideDirection: slideDirection, show: true)
-            to = self.calculatePosition(slideDirection: slideDirection, show: false)
-        }else if step == .hide{
-            from = self.calculatePosition(slideDirection: slideDirection, show: false)
-            to = self.calculatePosition(slideDirection: slideDirection, show: true)
+            let frame = self.calculateBubble(pinPoint: bubbleParam.pinPoint, targetSize: bubbleParam.targetSize, bubbleDirection: bubbleParam.bubbleDirection).1
+            
+            self.frame = frame
+            
+            if step == .show {
+                from = self.calculateFold(targetSize: bubbleParam.targetSize, unfoldDirection: bubbleParam.bubbleDirection, show: false)
+                to = self.calculateFold(targetSize: bubbleParam.targetSize, unfoldDirection: bubbleParam.bubbleDirection, show: true)
+            }else if step == .hide{
+                from = self.calculateFold(targetSize: bubbleParam.targetSize, unfoldDirection: bubbleParam.bubbleDirection, show: true)
+                to = self.calculateFold(targetSize: bubbleParam.targetSize, unfoldDirection: bubbleParam.bubbleDirection, show: false)
+            }
+            let fromPath = UIBezierPath.init(rect: from)
+            let toPath = UIBezierPath.init(rect: to)
+            animation = CAAnimation.spPathAnimation(values: [fromPath,toPath], duration: 1)
         }
-        let ani = CAAnimation.spPositionAnimation(values: [from,to], duration: 1)
-        group.animations?.append(ani)
-        
-        return group
-    }
-    
-    
-    
-    // 打包 alpha 封装动画类型
-    func packageAlphaAnimation(step:SPStepType,from:CGFloat,to:CGFloat) -> CAAnimationGroup {
-        let group:CAAnimationGroup = self.spAnimationGroup()
-        
-        let ani = CAAnimation.spOpacityAnimation(values: [from,to], duration: 1)
-        group.animations?.append(ani)
-        return group
+        return animation
         
     }
     
+    
+
+
 
 }

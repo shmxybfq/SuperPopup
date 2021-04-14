@@ -15,6 +15,8 @@ public class SPBubbleParam:SPBaseParam{
     public var targetSize:CGSize = CGSize.zero
     // 泡泡展开方向
     public var bubbleDirection:SPEightDirection = .none
+    // 泡泡形式
+    public var bubbleType:SPBubbleType = .scale
 }
 
 public class SPFoldParam:SPBaseParam{
@@ -60,6 +62,6 @@ public class SPBaseParam:NSObject{
     public var type:SPPopupType = .none
     // 动画数量
     public var count:Int = 0
-    // 动画数组
-    public var animations = [CAAnimation]()
+    // 类型&动画 数组
+    public var typeAnimations = Dictionary<SPBaseAnimationType,CAAnimation>()
 }
