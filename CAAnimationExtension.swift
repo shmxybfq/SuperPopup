@@ -9,8 +9,29 @@ import UIKit
 import Foundation
 
 
+let kAnimationTagKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kAnimationTagKey".hashValue)
+let kAnimationValueKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kAnimationValueKey".hashValue)
+
 public extension CAAnimation{
   
+    
+    var bindTag:String?{
+        get {
+            return  objc_getAssociatedObject(self, kAnimationTagKey) as? String
+        }
+        set {
+            objc_setAssociatedObject(self, kAnimationTagKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_COPY_NONATOMIC)
+        }
+    }
+    var bindValue:Any?{
+        get {
+            return objc_getAssociatedObject(self, kAnimationValueKey)
+        }
+        set {
+            objc_setAssociatedObject(self, kAnimationValueKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
+    }
+    
     /// 透明度
     static func spOpacityAnimation(values:[CGFloat],duration:Double = 0.25) -> CAKeyframeAnimation{
         let ani = CAKeyframeAnimation.init()

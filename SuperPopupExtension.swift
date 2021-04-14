@@ -12,6 +12,7 @@ let kSpManagerKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kSpMan
 let kSpDataSourceKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kSpDataSourceKey".hashValue)
 let kShowAnimationsKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kShowAnimationsKey".hashValue)
 let kHideAnimationsKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kHideAnimationsKey".hashValue)
+
 public extension UIView{
     
     var spManager:SPManager{

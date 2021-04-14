@@ -14,20 +14,35 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.blockView.alpha = 1
+        self.showed = false
     }
     
     var showed:Bool = false
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         //self.blockView.layer.add(self.view.spAlphaAnimation(), forKey: "opacity")
-           
+        let param = SPParam.init()
+        param.delay = 0
+        
         if self.showed{
-            self.blockView.sphide.spScaleAnimation { (param) in
-                
-            }.finish()
+//            self.blockView.sphide.spScaleAnimation { (param) in
+//                param.spring = true
+//            }.finish()
+            
+            self.blockView.sphide.spSlideAnimation { (param) in
+
+            }.finish(param)
         }else{
-            self.blockView.spshow.spScaleAnimation { (param) in
+
+
+//            self.blockView.spshow.spScaleAnimation { (param) in
+//
+//            }.finish()
+            
+          
+            
+            self.blockView.spshow.spSlideAnimation { (param) in
                 
-            }.finish()
+            }.finish(param)
         }
         self.showed = !self.showed
     }

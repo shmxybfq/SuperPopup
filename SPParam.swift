@@ -54,14 +54,28 @@ public class SPAlphaParam:SPBaseParam{
 public class SPBaseParam:NSObject{
     // 动画时间
     public var duration : Double = 0.25
-    // 位置偏移量
-    public var offset : CGPoint = CGPoint.zero
-    // 延时
-    public var delay:TimeInterval = 0.0
     // 动画类型
     public var type:SPPopupType = .none
     // 动画数量
     public var count:Int = 0
     // 类型&动画 数组
     public var typeAnimations = Dictionary<SPBaseAnimationType,CAAnimation>()
+}
+
+
+public class SPParam:NSObject{
+    // 动画时间
+    public var duration : Double = 0.25
+    // 位置偏移量
+    public var offset : CGPoint = CGPoint.zero
+    // 延时
+    public var delay:TimeInterval = 0.0
+    
+    /// 选择类型ui-初始化方法
+    public init(_ duration:Double = 0.25,_ offset:CGPoint = CGPoint.zero,_ delay:TimeInterval = 0.0) {
+        super.init()
+        self.duration = duration
+        self.offset = offset
+        self.delay = delay
+    }
 }
