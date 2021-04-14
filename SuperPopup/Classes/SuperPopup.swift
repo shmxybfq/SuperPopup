@@ -106,6 +106,17 @@ public class SPManager:NSObject{
     
     var packageParams = [Any]()
     
+    
+    public func spNoAnimation(_ closure: (_ make: SPAlphaParam ) -> Void = {_ in }) {
+        let param = SPAlphaParam()
+        param.type = .alpha
+        param.from = self.target?.alpha ?? 0.0
+        param.to = (self.step == .show) ? 1.0 : 0.0
+        self.packageParams.append(param)
+        closure(param)
+        self.finish(SPParam.init(0.0))
+    }
+    
     public func spAlphaAnimation(_ closure: (_ make: SPAlphaParam ) -> Void = {_ in }) -> SPManager {
         let param = SPAlphaParam()
         param.type = .alpha
@@ -178,6 +189,7 @@ extension UIView:SPDataSource,CAAnimationDelegate{
         self.spManager.step = .show
         self.spManager.target = self
         self.spDataSource = self
+        self.spManager.packageParams.removeAll()
         return self.spManager
     }
 
@@ -185,11 +197,13 @@ extension UIView:SPDataSource,CAAnimationDelegate{
         self.spManager.step = .hide
         self.spManager.target = self
         self.spDataSource = self
+        self.spManager.packageParams.removeAll()
         return self.spManager
     }
     
     
     func spMain(_ manager:SPManager){
+        
         
         for param in manager.packageParams {
             if let prm = param as? SPBaseParam {
@@ -203,22 +217,56 @@ extension UIView:SPDataSource,CAAnimationDelegate{
             }
         }
         
-        var anis = [CAAnimation]()
+        var animations = [CAAnimation]()
+        var maskAnimations = [CAAnimation]()
         for (_,param) in manager.packageParams.enumerated() {
             if let prm = param as? SPBaseParam {
                 for (_,animation) in prm.typeAnimations {
-                    anis.append(animation)
+                    if let basic = animation as? CAPropertyAnimation{
+                        if basic.keyPath == "path" {
+                            maskAnimations.append(basic)
+                        }else{
+                            animations.append(basic)
+                        }
+                    }
                 }
             }
         }
         
-        let group = self.spAnimationGroup()
-        group.animations = anis
-        group.duration = self.spManager.param.duration
-    
-        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + self.spManager.param.delay) {
-            self.layer.add(group, forKey: manager.step == .show ? "spshow" : "sphide")
+        if animations.count > 0 {
+            let group = self.spAnimationGroup()
+            group.animations = animations
+            group.duration = self.spManager.param.duration
+            group.delegate = self
+            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + self.spManager.param.delay) {
+                self.layer.removeAllAnimations()
+                self.layer.add(group, forKey: manager.step == .show ? "spshow" : "sphide")
+            }
         }
+        
+        if maskAnimations.count > 0 {
+            let group = self.spAnimationGroup()
+            group.animations = maskAnimations
+            group.duration = self.spManager.param.duration
+            group.delegate = self
+            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + self.spManager.param.delay) {
+                self.shapeLayer.removeAllAnimations()
+                self.shapeLayer.add(group, forKey: manager.step == .show ? "spshow" : "sphide")
+            }
+        }
+        
+    }
+    
+    
+    public func animationDidStart(_ anim: CAAnimation){
+        
+    }
+
+    
+    
+    public func animationDidStop(_ anim: CAAnimation, finished flag: Bool){
+        print("======%p",anim)
+//        anim.delegate = nil
     }
         
     
@@ -261,7 +309,7 @@ extension UIView:SPDataSource,CAAnimationDelegate{
             }else if step == .show {
                 to = 0.0
             }
-            animation = CAAnimation.spOpacityAnimation(values: [from,to], duration: 1)
+            animation = CAAnimation.spOpacityAnimation(values: [from,to], duration: 0.0)
             
         }else if type == .opacity,let alphaParam = param as? SPAlphaParam {
             
@@ -271,6 +319,7 @@ extension UIView:SPDataSource,CAAnimationDelegate{
             
             var from:CGPoint = CGPoint.zero
             var to:CGPoint = CGPoint.zero
+            let offset = self.spManager.param.offset
             if step == .show {
                 from = self.calculatePosition(slideDirection: slideParam.slideDirection, show: true)
                 to = self.calculatePosition(slideDirection: slideParam.slideDirection, show: false)
@@ -278,6 +327,10 @@ extension UIView:SPDataSource,CAAnimationDelegate{
                 from = self.calculatePosition(slideDirection: slideParam.slideDirection, show: false)
                 to = self.calculatePosition(slideDirection: slideParam.slideDirection, show: true)
             }
+            
+            from = CGPoint.init(x: from.x + offset.x, y: from.y + offset.y)
+            to = CGPoint.init(x: to.x + offset.x, y: to.y + offset.y)
+            
             animation = CAAnimation.spPositionAnimation(values: [from,to], duration: slideParam.duration)
             
         }else if type == .scale,let scaleParam = param as? SPScaleParam {
@@ -362,13 +415,20 @@ extension UIView:SPDataSource,CAAnimationDelegate{
             let fromPath = UIBezierPath.init(rect: from)
             let toPath = UIBezierPath.init(rect: to)
             animation = CAAnimation.spPathAnimation(values: [fromPath,toPath], duration: bubbleParam.duration)
+            
+        }else if type == .path,let maskParam = param as? SPMaskParam {
+            
+            let fromPath = maskParam.from
+            let toPath = maskParam.to
+            
+            animation = CAAnimation.spPathAnimation(values: [fromPath,toPath], duration: maskParam.duration)
+            
         }
-        return animation
         
+        animation?.duration = self.spManager.param.duration
+        animation?.delegate = self
+        animation?.bindTag = "666"
+        print("======666%p",animation)
+        return animation
     }
-    
-    
-
-
-
 }

@@ -22,15 +22,23 @@ class ViewController: UIViewController {
         //self.blockView.layer.add(self.view.spAlphaAnimation(), forKey: "opacity")
         let param = SPParam.init()
         param.delay = 0
-        
+        param.duration = 1
         if self.showed{
 //            self.blockView.sphide.spScaleAnimation { (param) in
 //                param.spring = true
 //            }.finish()
             
-            self.blockView.sphide.spSlideAnimation { (param) in
-
+//            self.blockView.sphide.spSlideAnimation { (param) in
+//
+//            }.finish(param)
+            
+            
+//            self.blockView.sphide.spNoAnimation()
+            
+            self.blockView.sphide.spFoldAnimation { (param) in
+                
             }.finish(param)
+            
         }else{
 
 
@@ -39,8 +47,13 @@ class ViewController: UIViewController {
 //            }.finish()
             
           
+//            self.blockView.spshow.spSlideAnimation { (param) in
+//
+//            }.finish(param)
             
-            self.blockView.spshow.spSlideAnimation { (param) in
+//            self.blockView.spshow.spNoAnimation()
+            
+            self.blockView.spshow.spFoldAnimation { (param) in
                 
             }.finish(param)
         }

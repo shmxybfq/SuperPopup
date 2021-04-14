@@ -29,6 +29,16 @@ public extension UIView{
         }
     }
     
+    var shapeLayer:CAShapeLayer{
+        get {
+            let shapeLayer = CAShapeLayer.init()
+            if self.layer.mask == nil{
+                self.layer.mask = shapeLayer
+            }
+            return self.layer.mask as! CAShapeLayer
+        }
+    }
+    
     var spDataSource:SPDataSource?{
         get {
             let spDataSource = objc_getAssociatedObject(self, kSpDataSourceKey) as? SPDataSource
@@ -265,5 +275,4 @@ public extension UIView{
         forView.frame = oldFrame
     }
     
-
 }

@@ -8,6 +8,14 @@
 import UIKit
 import Foundation
 
+public class SPMaskParam:SPBaseParam{
+    //
+    var from : UIBezierPath = UIBezierPath.init()
+    //
+    var to : UIBezierPath = UIBezierPath.init()
+    
+}
+
 public class SPBubbleParam:SPBaseParam{
     // 基本点
     var pinPoint : CGPoint = CGPoint.zero
@@ -18,6 +26,7 @@ public class SPBubbleParam:SPBaseParam{
     // 泡泡形式
     public var bubbleType:SPBubbleType = .scale
 }
+
 
 public class SPFoldParam:SPBaseParam{
     // view尺寸
