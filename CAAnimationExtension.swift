@@ -76,7 +76,7 @@ public extension CAAnimation{
     
     
     /// 缩放
-    static func spScaleAnimation(values:[Double],duration:Double = 0.25) -> CAKeyframeAnimation{
+    static func spScaleAnimation(values:[CGFloat],duration:Double = 0.25) -> CAKeyframeAnimation{
         let ani = CAKeyframeAnimation.init()
         ani.keyPath = "transform.scale"
         ani.values = values

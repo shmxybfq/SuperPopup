@@ -18,11 +18,11 @@ public class SPMaskParam:SPBaseParam{
 
 public class SPBubbleParam:SPBaseParam{
     // 基本点
-    var pinPoint : CGPoint = CGPoint.zero
+    public var pinPoint : CGPoint = CGPoint.zero
     // 泡泡尺寸
     public var targetSize:CGSize = CGSize.zero
     // 泡泡展开方向
-    public var bubbleDirection:SPEightDirection = .none
+    public var bubbleDirection:SPEightDirection = .toLeftBottom
     // 泡泡形式
     public var bubbleType:SPBubbleType = .scale
 }
@@ -72,7 +72,7 @@ public class SPBaseParam:NSObject{
 }
 
 
-public class SPParam:NSObject{
+public class SPParam:NSObject,Codable{
     // 动画时间
     public var duration : Double = 0.25
     // 位置偏移量
@@ -80,11 +80,38 @@ public class SPParam:NSObject{
     // 延时
     public var delay:TimeInterval = 0.0
     
+    // 背景
+    public lazy var backgroundView:UIView? = {() -> UIButton in
+        let ins = UIButton.init(type: .custom)
+        ins.backgroundColor = UIColor.black.withAlphaComponent(0.35)
+        return ins;
+    }();
+    
     /// 选择类型ui-初始化方法
     public init(_ duration:Double = 0.25,_ offset:CGPoint = CGPoint.zero,_ delay:TimeInterval = 0.0) {
         super.init()
         self.duration = duration
         self.offset = offset
         self.delay = delay
+    }
+}
+
+
+public class SPEnding:NSObject{
+    // 结束透明度
+    public var alpha : CGFloat = 1.0
+    // 结束位置
+    public var frame : CGRect = CGRect.zero
+    // 结束position
+    public var position : CGPoint = CGPoint.zero
+    // 结束position
+    public var size : CGSize = CGSize.zero
+    /// 选择类型ui-初始化方法
+    public init(_ alpha:CGFloat = 0.25,_ frame:CGRect = CGRect.zero,_ position:CGPoint = CGPoint.zero,_ size:CGSize = CGSize.zero) {
+        super.init()
+        self.alpha = alpha
+        self.frame = frame
+        self.position = position
+        self.size = size
     }
 }

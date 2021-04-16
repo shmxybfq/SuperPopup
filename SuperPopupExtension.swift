@@ -12,7 +12,8 @@ let kSpManagerKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kSpMan
 let kSpDataSourceKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kSpDataSourceKey".hashValue)
 let kShowAnimationsKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kShowAnimationsKey".hashValue)
 let kHideAnimationsKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kHideAnimationsKey".hashValue)
-
+let kEndingKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kEndingKey".hashValue)
+let kBackgroundsKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kBackgroundsKey".hashValue)
 public extension UIView{
     
     var spManager:SPManager{
@@ -29,11 +30,19 @@ public extension UIView{
         }
     }
     
+    var ending:SPEnding?{
+        get {
+            return objc_getAssociatedObject(self, kEndingKey) as? SPEnding
+        }
+        set {
+            objc_setAssociatedObject(self, kEndingKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
+    }
+    
     var shapeLayer:CAShapeLayer{
         get {
-            let shapeLayer = CAShapeLayer.init()
             if self.layer.mask == nil{
-                self.layer.mask = shapeLayer
+                self.layer.mask = CAShapeLayer.init()
             }
             return self.layer.mask as! CAShapeLayer
         }
@@ -48,6 +57,16 @@ public extension UIView{
             objc_setAssociatedObject(self, kSpDataSourceKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_ASSIGN)
         }
     }
+    
+    var spBackgroundDelegate:SPBackgroundProtocol?{
+        get {
+            return objc_getAssociatedObject(self, kBackgroundsKey) as? SPBackgroundProtocol
+        }
+        set {
+            objc_setAssociatedObject(self, kBackgroundsKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_ASSIGN)
+        }
+    }
+    
     
     var showAnimations: Dictionary <String,CAAnimation>{
         get {
@@ -76,6 +95,8 @@ public extension UIView{
             objc_setAssociatedObject(self, kHideAnimationsKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN)
         }
     }
+    
+    
     
     // 创建一个动画组壳
     func spAnimationGroup() -> CAAnimationGroup {

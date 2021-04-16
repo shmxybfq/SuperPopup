@@ -101,19 +101,20 @@ public let sbh: CGFloat = sb.size.height
 public class SPManager:NSObject{
     
     var step : SPStepType = .none
-    var target : UIView?
+    public var target : UIView?
+    public var inView : UIView? = UIApplication.shared.keyWindow
     var param : SPParam = SPParam.init()
     
     var packageParams = [Any]()
-    
+    var backgrounds : [UIView] = [UIView]()
     
     public func spNoAnimation(_ closure: (_ make: SPAlphaParam ) -> Void = {_ in }) {
         let param = SPAlphaParam()
         param.type = .alpha
         param.from = self.target?.alpha ?? 0.0
         param.to = (self.step == .show) ? 1.0 : 0.0
-        self.packageParams.append(param)
         closure(param)
+        self.packageParams.append(param)
         self.finish(SPParam.init(0.0))
     }
     
@@ -122,8 +123,8 @@ public class SPManager:NSObject{
         param.type = .alpha
         param.from = self.target?.alpha ?? 0.0
         param.to = (self.step == .show) ? 1.0 : 0.0
-        self.packageParams.append(param)
         closure(param)
+        self.packageParams.append(param)
         return self
     }
     
@@ -131,8 +132,8 @@ public class SPManager:NSObject{
         let param = SPSlideParam()
         param.type = .slide
         param.slideDirection = .fromBottom
-        self.packageParams.append(param)
         closure(param)
+        self.packageParams.append(param)
         return self
     }
     
@@ -142,8 +143,8 @@ public class SPManager:NSObject{
         param.spring = false
         param.from = (self.step == .show) ? 0.0 : 1.0
         param.to = (self.step == .show) ? 1.0 : 0.0
-        self.packageParams.append(param)
         closure(param)
+        self.packageParams.append(param)
         return self
     }
     
@@ -152,19 +153,19 @@ public class SPManager:NSObject{
         param.type = .fold
         param.targetSize = self.target?.frame.size ?? CGSize.zero
         param.unfoldDirection = .toBottom
-        self.packageParams.append(param)
         closure(param)
+        self.packageParams.append(param)
         return self
     }
     
     public func spBubbleAnimation(_ closure: (_ make: SPBubbleParam ) -> Void = {_ in }) -> SPManager {
         let param = SPBubbleParam()
         param.type = .bubble
-        param.pinPoint = CGPoint.init(x: self.target?.frame.size.width ?? 0, y: 0)
+        param.pinPoint = self.target?.center ?? CGPoint.zero
         param.targetSize = self.target?.frame.size ?? CGSize.zero
         param.bubbleDirection = .toLeftBottom
-        self.packageParams.append(param)
         closure(param)
+        self.packageParams.append(param)
         return self
     }
     
@@ -182,28 +183,41 @@ public protocol SPDataSource:NSObjectProtocol {
     
 }
 
-extension UIView:SPDataSource,CAAnimationDelegate{
+public protocol SPBackgroundProtocol:NSObjectProtocol {
     
+    func backgroundCount(_ spview:UIView) -> Int
     
-    public var spshow: SPManager {
+    func backgroundViewForIndex(_ spview:UIView,index:Int) -> UIView
+    
+    func backgroundTouch(_ spview:UIView,_ background:UIView) -> Bool
+}
+
+extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
+
+
+    public func spshow(_ inView: UIView?) -> SPManager {
+        self.spManager.inView = inView
         self.spManager.step = .show
         self.spManager.target = self
         self.spDataSource = self
+        self.spBackgroundDelegate = self
         self.spManager.packageParams.removeAll()
+        self.ending = SPEnding.init(self.alpha, self.frame,self.center,self.frame.size)
         return self.spManager
     }
-
+    
     public var sphide: SPManager {
         self.spManager.step = .hide
         self.spManager.target = self
         self.spDataSource = self
+        self.spBackgroundDelegate = self
         self.spManager.packageParams.removeAll()
+        self.ending = SPEnding.init(self.alpha, self.frame,self.center,self.frame.size)
         return self.spManager
     }
     
     
     func spMain(_ manager:SPManager){
-        
         
         for param in manager.packageParams {
             if let prm = param as? SPBaseParam {
@@ -222,15 +236,75 @@ extension UIView:SPDataSource,CAAnimationDelegate{
         for (_,param) in manager.packageParams.enumerated() {
             if let prm = param as? SPBaseParam {
                 for (_,animation) in prm.typeAnimations {
-                    if let basic = animation as? CAPropertyAnimation{
-                        if basic.keyPath == "path" {
-                            maskAnimations.append(basic)
+                    if let property = animation as? CAPropertyAnimation{
+                        if property.keyPath == "path" {
+                            maskAnimations.append(property)
                         }else{
-                            animations.append(basic)
+                            animations.append(property)
+                            if property.keyPath == "opacity" {
+                                if let basic = property as? CABasicAnimation,let to = basic.toValue as? CGFloat {
+                                    self.ending?.alpha = to
+                                }else if let key = property as? CAKeyframeAnimation,(key.values?.count ?? 0) > 0 {
+                                    let last = key.values?.last
+                                    if let to = last as? CGFloat {
+                                        self.ending?.alpha = to
+                                    }
+                                }
+                            }else if property.keyPath == "position" {
+                                if let basic = property as? CABasicAnimation,let to = basic.toValue as? CGPoint {
+                                    self.ending?.position = to
+                                }else if let key = property as? CAKeyframeAnimation,(key.values?.count ?? 0) > 0 {
+                                    let last = key.values?.last
+                                    if let to = last as? CGPoint {
+                                        self.ending?.position = to
+                                    }
+                                }
+                            }else if property.keyPath == "bounds.size" {
+                                if let basic = property as? CABasicAnimation,let to = basic.toValue as? CGSize {
+                                    self.ending?.size = to
+                                }else if let key = property as? CAKeyframeAnimation,(key.values?.count ?? 0) > 0 {
+                                    let last = key.values?.last
+                                    if let to = last as? CGSize {
+                                        self.ending?.size = to
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
+        }
+        
+        if self.spManager.step == .show && self.spManager.inView != nil{
+            // 背景
+            let backgroundCount = self.spBackgroundDelegate?.backgroundCount(self) ?? 0
+            if backgroundCount > 0 {
+                for index in 0..<backgroundCount {
+                    let background = self.spBackgroundDelegate?.backgroundViewForIndex(self, index: index)
+                    if let bk = background {
+                        self.spManager.backgrounds.append(bk)
+                        self.spManager.inView?.addSubview(bk)
+                    }
+                }
+            }else{
+                if self.spManager.param.backgroundView != nil{
+                    self.spManager.param.backgroundView?.alpha = 0.0
+                    self.spManager.param.backgroundView?.frame = self.spManager.inView?.bounds ?? sb
+                    if let bk = self.spManager.param.backgroundView as? UIButton {
+                        bk.addTarget(self, action: #selector(defaultBackgroundClick(ins:)), for: .touchUpInside)
+                    }
+                    self.spManager.inView?.addSubview(self.spManager.param.backgroundView!)
+                    UIView.animate(withDuration: self.spManager.param.duration, delay: self.spManager.param.delay, options: UIViewAnimationOptions.curveEaseOut) {
+                        self.spManager.param.backgroundView?.alpha = 1.0
+                    } completion: { (finish) in}
+                }
+            }
+            
+            // 弹窗视图
+            if self.superview != nil{
+                self.removeFromSuperview()
+            }
+            self.spManager.inView?.addSubview(self)
         }
         
         if animations.count > 0 {
@@ -254,7 +328,21 @@ extension UIView:SPDataSource,CAAnimationDelegate{
                 self.shapeLayer.add(group, forKey: manager.step == .show ? "spshow" : "sphide")
             }
         }
+    }
+    
+    // 默认背景点击
+    @objc func defaultBackgroundClick(ins:UIButton){
         
+        if self.spBackgroundDelegate?.backgroundTouch(self, self.spManager.param.backgroundView ?? UIView.init()) == true {
+            self.spManager.param.delay = 0.0
+            self.sphide.spAlphaAnimation { (param) in
+                param.to = 0.0
+            }.finish(self.spManager.param)
+            
+            UIView.animate(withDuration: self.spManager.param.duration, delay: 0, options: UIViewAnimationOptions.curveEaseOut) {
+                self.spManager.param.backgroundView?.alpha = 0.0
+            } completion: { (finish) in}
+        }
     }
     
     
@@ -266,9 +354,24 @@ extension UIView:SPDataSource,CAAnimationDelegate{
     
     public func animationDidStop(_ anim: CAAnimation, finished flag: Bool){
         print("======%p",anim)
-//        anim.delegate = nil
+//        self.alpha = self.ending?.alpha ?? self.alpha
+//        self.frame = CGRect.init(origin: CGPoint.zero, size: self.ending?.size ?? self.frame.size)
+//        self.center = self.ending?.position ?? self.center
     }
-        
+    
+    
+    @objc open func backgroundCount(_ spview: UIView) -> Int {
+        return 0
+    }
+    
+    @objc open func backgroundViewForIndex(_ spview: UIView, index: Int) -> UIView {
+        return UIButton.init(type: .custom)
+    }
+    
+    @objc open func backgroundTouch(_ spview: UIView, _ background: UIView) -> Bool {
+        return true
+    }
+    
     
     public func animationTypes(_ spview: UIView, _ step: SPStepType, _ param: Any) -> [SPBaseAnimationType] {
         if let baseParam = param as? SPBaseParam{
@@ -302,11 +405,12 @@ extension UIView:SPDataSource,CAAnimationDelegate{
         var animation:CAAnimation? = nil
         
         if type == .none {
+            
             let from:CGFloat = self.alpha
             var to:CGFloat = self.alpha
             if step == .show {
                 to = 1.0
-            }else if step == .show {
+            }else if step == .hide {
                 to = 0.0
             }
             animation = CAAnimation.spOpacityAnimation(values: [from,to], duration: 0.0)
@@ -317,6 +421,9 @@ extension UIView:SPDataSource,CAAnimationDelegate{
             
         }else if type == .position,let slideParam = param as? SPSlideParam {
             
+            if slideParam.slideDirection == .none {
+                return nil
+            }
             var from:CGPoint = CGPoint.zero
             var to:CGPoint = CGPoint.zero
             let offset = self.spManager.param.offset
@@ -338,7 +445,7 @@ extension UIView:SPDataSource,CAAnimationDelegate{
             self.setAnchorPoint(point: CGPoint.init(x: 0.5, y: 0.5), forView: self)
             
             if scaleParam.spring {
-                var values:[Double] = []
+                var values:[CGFloat] = []
                 values.append(0.0)
                 values.append(1.2)
                 values.append(0.9)
@@ -348,35 +455,33 @@ extension UIView:SPDataSource,CAAnimationDelegate{
                 }
                 animation = CAAnimation.spScaleAnimation(values: values, duration: scaleParam.duration)
             }else{
-                var from:Double = 1.0
-                var to:Double = 1.0
-                if step == .show {
-                    from = 0.0
-                    to = 1.0
-                }else if step == .hide{
-                    from = 1.0
-                    to = 0.0
-                }
-                animation = CAAnimation.spScaleAnimation(values: [from,to], duration: scaleParam.duration)
+                animation = CAAnimation.spScaleAnimation(values: [scaleParam.from,scaleParam.to], duration: scaleParam.duration)
             }
             
         }else if type == .path,let foldParam = param as? SPFoldParam {
             
+            if foldParam.unfoldDirection == .none {
+                return nil
+            }
             var from:CGRect = CGRect.zero
             var to:CGRect = CGRect.zero
 
             if step == .show {
-                from = self.calculateFold(targetSize: self.frame.size, unfoldDirection: foldParam.unfoldDirection, show: false)
-                to = self.calculateFold(targetSize: self.frame.size, unfoldDirection: foldParam.unfoldDirection, show: true)
+                from = self.calculateFold(targetSize: foldParam.targetSize, unfoldDirection: foldParam.unfoldDirection, show: false)
+                to = self.calculateFold(targetSize: foldParam.targetSize, unfoldDirection: foldParam.unfoldDirection, show: true)
             }else if step == .hide{
-                from = self.calculateFold(targetSize: self.frame.size, unfoldDirection: foldParam.unfoldDirection, show: true)
-                to = self.calculateFold(targetSize: self.frame.size, unfoldDirection: foldParam.unfoldDirection, show: false)
+                from = self.calculateFold(targetSize: foldParam.targetSize, unfoldDirection: foldParam.unfoldDirection, show: true)
+                to = self.calculateFold(targetSize: foldParam.targetSize, unfoldDirection: foldParam.unfoldDirection, show: false)
             }
             let fromPath = UIBezierPath.init(rect: from)
             let toPath = UIBezierPath.init(rect: to)
             animation = CAAnimation.spPathAnimation(values: [fromPath,toPath], duration: foldParam.duration)
             
-        }else if type == .path,let bubbleParam = param as? SPBubbleParam,bubbleParam.bubbleType == .scale {
+        }else if type == .scale,let bubbleParam = param as? SPBubbleParam,bubbleParam.bubbleType == .scale {
+            
+            if bubbleParam.bubbleDirection == .none {
+                return nil
+            }
             
             let anchorPoint = self.calculateBubble(pinPoint: bubbleParam.pinPoint, targetSize: bubbleParam.targetSize, bubbleDirection: bubbleParam.bubbleDirection).0
             let frame = self.calculateBubble(pinPoint: bubbleParam.pinPoint, targetSize: bubbleParam.targetSize, bubbleDirection: bubbleParam.bubbleDirection).1
@@ -385,8 +490,8 @@ extension UIView:SPDataSource,CAAnimationDelegate{
             
             self.setAnchorPoint(point: anchorPoint, forView: self)
             
-            var from:Double = 1.0
-            var to:Double = 1.0
+            var from:CGFloat = 1.0
+            var to:CGFloat = 1.0
             if step == .show {
                 from = 0.0
                 to = 1.0
@@ -427,8 +532,8 @@ extension UIView:SPDataSource,CAAnimationDelegate{
         
         animation?.duration = self.spManager.param.duration
         animation?.delegate = self
-        animation?.bindTag = "666"
-        print("======666%p",animation)
+        animation?.duration = self.spManager.param.duration
+    
         return animation
     }
 }
