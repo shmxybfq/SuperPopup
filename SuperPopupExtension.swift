@@ -112,42 +112,48 @@ public extension UIView{
     
     
     // 根据滑动类型计算滑动的值
-    func calculatePosition(slideDirection:SPFourDirection,show:Bool = true) -> CGPoint{
-        let halfw:CGFloat = self.frame.size.width * 0.5
-        let halfh:CGFloat = self.frame.size.height * 0.5
+    func calculatePosition(_ slideDirection:SPEightDirection,_ step:SPStepType,_ offset:CGPoint) -> (CGPoint,CGPoint){
+        
+        let selfw:CGFloat = self.frame.size.width
+        let selfh:CGFloat = self.frame.size.height
         
         let superw = self.superview?.frame.size.width ?? sbw
         let superh = self.superview?.frame.size.height ?? sbh
         
-        var point = CGPoint.init(x: halfw, y: halfh)
-        if slideDirection == .fromLeft {
-            if show {
-                point = CGPoint.init(x: -halfw, y: superh * 0.5)
-            }else{
-                point = CGPoint.init(x: halfw, y: superh * 0.5)
+        var from = CGPoint.init(x: superw * 0.5, y: superh * 0.5)
+        var to = CGPoint.init(x: superw * 0.5, y: superh * 0.5)
+        
+        if step == .show {
+            
+            if slideDirection == .toTop {
+                from = CGPoint.init(x: superw * 0.5 + offset.x, y: superh + selfh)
+                to = CGPoint.init(x: superw * 0.5 + offset.x, y: superh - selfh * 0.5 + offset.y)
+            }else if slideDirection == .toBottom {
+                from = CGPoint.init(x: superw * 0.5 + offset.x, y: -selfh)
+                to = CGPoint.init(x: superw * 0.5 + offset.x, y: selfh * 0.5 + offset.y)
+            }else if slideDirection == .toRight {
+                from = CGPoint.init(x: -selfw, y: superh * 0.5 + offset.y)
+                to = CGPoint.init(x: selfw * 0.5 + offset.x, y: superh * 0.5 + offset.y)
+            }else if slideDirection == .toLeft {
+                from = CGPoint.init(x: superw + selfw, y: superh * 0.5 + offset.y)
+                to = CGPoint.init(x: -selfw * 0.5 + offset.x, y: superh * 0.5 + offset.y)
             }
-        }else if slideDirection == .fromBottom {
-            if show {
-                point = CGPoint.init(x: superw * 0.5, y: superh + halfh)
-            }else{
-                point = CGPoint.init(x: superw * 0.5, y: superh - halfh)
-            }
-        }else if slideDirection == .fromRight {
-            if show {
-                point = CGPoint.init(x: superw + halfw, y: superh * 0.5)
-            }else{
-                point = CGPoint.init(x: superw - halfw, y: superh * 0.5)
-            }
-        }else if slideDirection == .fromTop {
-            if show {
-                point = CGPoint.init(x: superw * 0.5, y: -halfh)
-            }else{
-                point = CGPoint.init(x: superw * 0.5, y: halfh)
-            }
+            
         }else{
-            point = CGPoint.init(x: halfw, y: halfh)
+            
+            from = self.center
+            
+            if slideDirection == .toTop {
+                to = CGPoint.init(x: self.center.x + offset.x, y: -selfh)
+            }else if slideDirection == .toBottom {
+                to = CGPoint.init(x: self.center.x + offset.x, y: superh + selfh)
+            }else if slideDirection == .toRight {
+                to = CGPoint.init(x: superw + selfw, y: self.center.y + offset.y)
+            }else if slideDirection == .toLeft {
+                to = CGPoint.init(x: -selfw, y: self.center.y + offset.y)
+            }
         }
-        return point
+        return (from,to)
     }
     
     
@@ -230,7 +236,7 @@ public extension UIView{
     
     
     // 根据泡泡类型计算泡泡的anchorPoint值
-    func calculateBubble(pinPoint:CGPoint,targetSize:CGSize,bubbleDirection:SPEightDirection) -> (CGPoint,CGRect){
+    func calculateBubble(_ pinPoint:CGPoint,_ targetSize:CGSize,_ bubbleDirection:SPEightDirection) -> (CGPoint,CGRect){
         
         let ss = targetSize
         
@@ -294,6 +300,12 @@ public extension UIView{
         let oldFrame = forView.frame
         forView.layer.anchorPoint = point
         forView.frame = oldFrame
+    }
+    
+    func getFrame(_ size:CGSize,_ center:CGPoint) -> CGRect{
+        let x = center.x - size.width * 0.5
+        let y = center.y - size.height * 0.5
+        return CGRect.init(origin: CGPoint.init(x: x, y: y), size: size)
     }
     
 }

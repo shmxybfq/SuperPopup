@@ -48,7 +48,7 @@ public class SPScaleParam:SPBaseParam{
 
 public class SPSlideParam:SPBaseParam{
     // 滑动方向
-    public var slideDirection:SPFourDirection = .none
+    public var slideDirection:SPEightDirection = .none
 }
 
 
@@ -99,19 +99,13 @@ public class SPParam:NSObject,Codable{
 
 public class SPEnding:NSObject{
     // 结束透明度
-    public var alpha : CGFloat = 1.0
+    public var alpha : CGFloat = -1
     // 结束位置
     public var frame : CGRect = CGRect.zero
-    // 结束position
-    public var position : CGPoint = CGPoint.zero
-    // 结束position
-    public var size : CGSize = CGSize.zero
     /// 选择类型ui-初始化方法
-    public init(_ alpha:CGFloat = 0.25,_ frame:CGRect = CGRect.zero,_ position:CGPoint = CGPoint.zero,_ size:CGSize = CGSize.zero) {
+    public init(_ alpha:CGFloat = -1,_ frame:CGRect = CGRect.zero) {
         super.init()
         self.alpha = alpha
         self.frame = frame
-        self.position = position
-        self.size = size
     }
 }

@@ -61,16 +61,7 @@ public enum SPStepType : Int, Codable{
     case hide
 }
 
-// 滑动方向
-public enum SPFourDirection : Int, Codable{
-    case none = 0
-    case fromLeft
-    case fromBottom
-    case fromRight
-    case fromTop
-}
-
-// 折叠展开方向
+// 方向
 public enum SPEightDirection : Int, Codable{
     case none = 0
     case toLeftBottom
@@ -108,6 +99,8 @@ public class SPManager:NSObject{
     var packageParams = [Any]()
     var backgrounds : [UIView] = [UIView]()
     
+    var animating : Bool = false
+    
     public func spNoAnimation(_ closure: (_ make: SPAlphaParam ) -> Void = {_ in }) {
         let param = SPAlphaParam()
         param.type = .alpha
@@ -131,7 +124,7 @@ public class SPManager:NSObject{
     public func spSlideAnimation(_ closure: (_ make: SPSlideParam ) -> Void = {_ in }) -> SPManager {
         let param = SPSlideParam()
         param.type = .slide
-        param.slideDirection = .fromBottom
+        param.slideDirection = .toTop
         closure(param)
         self.packageParams.append(param)
         return self
@@ -202,7 +195,7 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
         self.spDataSource = self
         self.spBackgroundDelegate = self
         self.spManager.packageParams.removeAll()
-        self.ending = SPEnding.init(self.alpha, self.frame,self.center,self.frame.size)
+        self.ending = SPEnding()
         return self.spManager
     }
     
@@ -212,12 +205,16 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
         self.spDataSource = self
         self.spBackgroundDelegate = self
         self.spManager.packageParams.removeAll()
-        self.ending = SPEnding.init(self.alpha, self.frame,self.center,self.frame.size)
+        self.ending = SPEnding()
         return self.spManager
     }
     
     
     func spMain(_ manager:SPManager){
+        
+        if self.spManager.animating {
+            return
+        }
         
         for param in manager.packageParams {
             if let prm = param as? SPBaseParam {
@@ -241,34 +238,6 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
                             maskAnimations.append(property)
                         }else{
                             animations.append(property)
-                            if property.keyPath == "opacity" {
-                                if let basic = property as? CABasicAnimation,let to = basic.toValue as? CGFloat {
-                                    self.ending?.alpha = to
-                                }else if let key = property as? CAKeyframeAnimation,(key.values?.count ?? 0) > 0 {
-                                    let last = key.values?.last
-                                    if let to = last as? CGFloat {
-                                        self.ending?.alpha = to
-                                    }
-                                }
-                            }else if property.keyPath == "position" {
-                                if let basic = property as? CABasicAnimation,let to = basic.toValue as? CGPoint {
-                                    self.ending?.position = to
-                                }else if let key = property as? CAKeyframeAnimation,(key.values?.count ?? 0) > 0 {
-                                    let last = key.values?.last
-                                    if let to = last as? CGPoint {
-                                        self.ending?.position = to
-                                    }
-                                }
-                            }else if property.keyPath == "bounds.size" {
-                                if let basic = property as? CABasicAnimation,let to = basic.toValue as? CGSize {
-                                    self.ending?.size = to
-                                }else if let key = property as? CAKeyframeAnimation,(key.values?.count ?? 0) > 0 {
-                                    let last = key.values?.last
-                                    if let to = last as? CGSize {
-                                        self.ending?.size = to
-                                    }
-                                }
-                            }
                         }
                     }
                 }
@@ -313,6 +282,7 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
             group.duration = self.spManager.param.duration
             group.delegate = self
             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + self.spManager.param.delay) {
+                self.spManager.animating = true
                 self.layer.removeAllAnimations()
                 self.layer.add(group, forKey: manager.step == .show ? "spshow" : "sphide")
             }
@@ -324,6 +294,7 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
             group.duration = self.spManager.param.duration
             group.delegate = self
             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + self.spManager.param.delay) {
+                self.spManager.animating = true
                 self.shapeLayer.removeAllAnimations()
                 self.shapeLayer.add(group, forKey: manager.step == .show ? "spshow" : "sphide")
             }
@@ -354,9 +325,17 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
     
     public func animationDidStop(_ anim: CAAnimation, finished flag: Bool){
         print("======%p",anim)
-//        self.alpha = self.ending?.alpha ?? self.alpha
-//        self.frame = CGRect.init(origin: CGPoint.zero, size: self.ending?.size ?? self.frame.size)
-//        self.center = self.ending?.position ?? self.center
+        if self.ending?.alpha != -1 {
+            self.alpha = self.ending?.alpha ?? self.alpha
+        }
+        if self.ending?.frame != CGRect.zero {
+            self.frame = self.ending?.frame ?? self.frame
+        }
+        if self.spManager.step == .show {
+            self.spManager.animating = false
+        }else{
+            self.spManager = SPManager.init()
+        }
     }
     
     
@@ -413,10 +392,12 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
             }else if step == .hide {
                 to = 0.0
             }
+            self.ending?.alpha = to
             animation = CAAnimation.spOpacityAnimation(values: [from,to], duration: 0.0)
             
         }else if type == .opacity,let alphaParam = param as? SPAlphaParam {
             
+            self.ending?.alpha = alphaParam.to
             animation = CAAnimation.spOpacityAnimation(values: [alphaParam.from,alphaParam.to], duration: alphaParam.duration)
             
         }else if type == .position,let slideParam = param as? SPSlideParam {
@@ -424,19 +405,11 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
             if slideParam.slideDirection == .none {
                 return nil
             }
-            var from:CGPoint = CGPoint.zero
-            var to:CGPoint = CGPoint.zero
-            let offset = self.spManager.param.offset
-            if step == .show {
-                from = self.calculatePosition(slideDirection: slideParam.slideDirection, show: true)
-                to = self.calculatePosition(slideDirection: slideParam.slideDirection, show: false)
-            }else if step == .hide{
-                from = self.calculatePosition(slideDirection: slideParam.slideDirection, show: false)
-                to = self.calculatePosition(slideDirection: slideParam.slideDirection, show: true)
-            }
             
-            from = CGPoint.init(x: from.x + offset.x, y: from.y + offset.y)
-            to = CGPoint.init(x: to.x + offset.x, y: to.y + offset.y)
+            let from = self.calculatePosition(slideParam.slideDirection, step, self.spManager.param.offset).0
+            let to = self.calculatePosition(slideParam.slideDirection, step, self.spManager.param.offset).1
+            
+            self.ending?.frame = self.getFrame(self.frame.size, to)
             
             animation = CAAnimation.spPositionAnimation(values: [from,to], duration: slideParam.duration)
             
@@ -483,22 +456,15 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
                 return nil
             }
             
-            let anchorPoint = self.calculateBubble(pinPoint: bubbleParam.pinPoint, targetSize: bubbleParam.targetSize, bubbleDirection: bubbleParam.bubbleDirection).0
-            let frame = self.calculateBubble(pinPoint: bubbleParam.pinPoint, targetSize: bubbleParam.targetSize, bubbleDirection: bubbleParam.bubbleDirection).1
+            let from:CGFloat = (step == .show) ? 0.0 : 1.0
+            let to:CGFloat = (step == .show) ? 1.0 : 0.0
             
-            self.frame = frame
+            let anchorPoint = self.calculateBubble(bubbleParam.pinPoint, bubbleParam.targetSize, bubbleParam.bubbleDirection).0
+            self.frame = self.calculateBubble(bubbleParam.pinPoint, bubbleParam.targetSize, bubbleParam.bubbleDirection).1
             
+            self.ending?.frame = self.frame
             self.setAnchorPoint(point: anchorPoint, forView: self)
             
-            var from:CGFloat = 1.0
-            var to:CGFloat = 1.0
-            if step == .show {
-                from = 0.0
-                to = 1.0
-            }else if step == .hide{
-                from = 1.0
-                to = 0.0
-            }
             animation = CAAnimation.spScaleAnimation(values: [from,to], duration: bubbleParam.duration)
             
         }else if type == .path,let bubbleParam = param as? SPBubbleParam,bubbleParam.bubbleType == .mask {
@@ -506,10 +472,9 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
             var from:CGRect = CGRect.zero
             var to:CGRect = CGRect.zero
 
-            let frame = self.calculateBubble(pinPoint: bubbleParam.pinPoint, targetSize: bubbleParam.targetSize, bubbleDirection: bubbleParam.bubbleDirection).1
-            
-            self.frame = frame
-            
+            self.frame = self.calculateBubble(bubbleParam.pinPoint, bubbleParam.targetSize, bubbleParam.bubbleDirection).1
+            self.ending?.frame = self.frame
+
             if step == .show {
                 from = self.calculateFold(targetSize: bubbleParam.targetSize, unfoldDirection: bubbleParam.bubbleDirection, show: false)
                 to = self.calculateFold(targetSize: bubbleParam.targetSize, unfoldDirection: bubbleParam.bubbleDirection, show: true)
@@ -517,6 +482,7 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
                 from = self.calculateFold(targetSize: bubbleParam.targetSize, unfoldDirection: bubbleParam.bubbleDirection, show: true)
                 to = self.calculateFold(targetSize: bubbleParam.targetSize, unfoldDirection: bubbleParam.bubbleDirection, show: false)
             }
+            
             let fromPath = UIBezierPath.init(rect: from)
             let toPath = UIBezierPath.init(rect: to)
             animation = CAAnimation.spPathAnimation(values: [fromPath,toPath], duration: bubbleParam.duration)
@@ -527,7 +493,6 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
             let toPath = maskParam.to
             
             animation = CAAnimation.spPathAnimation(values: [fromPath,toPath], duration: maskParam.duration)
-            
         }
         
         animation?.duration = self.spManager.param.duration
@@ -536,4 +501,6 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
     
         return animation
     }
+    
+    
 }
