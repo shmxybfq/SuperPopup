@@ -17,7 +17,8 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+      
+
     }
     
     //1.滑动时offset有问题
@@ -27,29 +28,45 @@ class ViewController: UIViewController {
         
         let param = SPParam.init()
         param.delay = 0
-        param.duration = 3
+        param.duration = 1
         param.backgroundView = nil
         //滑动时有问题
         param.offset = CGPoint.init(x: 0, y: -(UIScreen.main.bounds.size.height - 200.0) * 0.5)
         
         if self.showed == false{
 
-            //滑动
-            alert?.spshow(self.view).spSlideAnimation { (param) in
-                param.slideDirection = .toTop
-            }.finish(param)
+//            //滑动
+//            alert?.spshow(self.view).spSlideAnimation { (param) in
+//                param.slideDirection = .toTop
+//            }.finish(param)
+            
+            alert?.spshow(self.view).spRotationAnimation({ (param) in
+                
+            }).spScaleAnimation({ (param) in
+                
+            }).spAlphaAnimation({ (param) in
+                
+            }).finish(param)
             
         }else{
           
-            //滑动
-            alert?.sphide.spSlideAnimation({ (param) in
-                param.slideDirection = .toTop
-                param.to = CGPoint.init(x: self.alert?.center.x ?? 0, y: (self.alert?.center.y ?? 0) - 200)
-            }).spAlphaAnimation({ (param) in
-                param.to = 0.0
+//            //滑动
+//            alert?.sphide.spSlideAnimation({ (param) in
+//                param.slideDirection = .toTop
+//                param.to = CGPoint.init(x: self.alert?.center.x ?? 0, y: (self.alert?.center.y ?? 0) - 200)
+//            }).spAlphaAnimation({ (param) in
+//                param.to = 0.0
+//            }).spScaleAnimation({ (param) in
+//                param.to = 0.0
+//                param.target?.layer.anchorPoint = CGPoint.init(x: 0.5, y: 0)
+//            }).finish(param)
+            
+            alert?.sphide.spRotationAnimation({ (param) in
+                
             }).spScaleAnimation({ (param) in
-                param.to = 0.0
-                param.target?.layer.anchorPoint = CGPoint.init(x: 0.5, y: 0)
+                
+            }).spAlphaAnimation({ (param) in
+                
             }).finish(param)
             
         }

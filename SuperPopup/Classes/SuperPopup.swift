@@ -19,7 +19,8 @@ public enum SPPopupType : Int, Codable{
     case fold
     case bubble
     case mask
-    case other
+    case rotation
+    case custom
 }
 
 // 基础动画类型
@@ -31,6 +32,7 @@ public enum SPBaseAnimationType : Int, Codable{
     case scale
     case rotation
     case path
+    case custom
 }
 
 // 旋转类型
@@ -89,22 +91,55 @@ public let sbw: CGFloat = sb.size.width
 public let sbh: CGFloat = sb.size.height
 
 
+/// 数据源代理
 public protocol SPDataSource:NSObjectProtocol {
     
     func animationTypes(_ spview:UIView,_ step:SPStepType,_ param:Any) -> [SPBaseAnimationType]
     
     func animationForIndex(_ spview:UIView,_ step:SPStepType,_ param:Any,type:SPBaseAnimationType,index:Int) -> CAAnimation?
     
+    func customAnimationForIndex(_ spview:UIView,_ step:SPStepType,_ param:Any,type:SPBaseAnimationType,index:Int) -> CAAnimation?
 }
 
+
+/// 事件代理
 public protocol SPDelegate:NSObjectProtocol {
     
-    //func animationTypes(_ spview:UIView,_ step:SPStepType,_ param:Any) -> [SPBaseAnimationType]
+    func spInit(_ spview:UIView,_ manager:SPManager)
     
-    //func animationForIndex(_ spview:UIView,_ step:SPStepType,_ param:Any,type:SPBaseAnimationType,index:Int) -> CAAnimation?
+    func spWillPackageAnimation(_ spview:UIView,_ manager:SPManager)
     
+    func spDidPackageAnimation(_ spview:UIView,_ manager:SPManager,_ param:SPBaseParam)
+
+    func spWillBegin(_ spview:UIView,_ manager:SPManager)
+
+    func spWillGetAnimations(_ spview:UIView,_ manager:SPManager)
+    
+    func spDidGetAnimations(_ spview:UIView,_ manager:SPManager)
+    
+    func spWillCommit(_ spview:UIView,_ manager:SPManager,_ animations:[CAAnimation],_ maskAnimations:[CAAnimation])
+    
+    func spDidCommited(_ spview:UIView,_ manager:SPManager)
+    
+    func spAnimationDidRun(_ spview:UIView,_ manager:SPManager,_ mark:Any)
+    
+    func spWillDoBackground(_ spview:UIView,_ manager:SPManager)
+    
+    func spBackgroundDidAddedToView(_ spview:UIView,_ manager:SPManager,_ backgroundView:UIView,_ index:Int)
+    
+    func spBackgroundDidAddedAll(_ spview:UIView,_ manager:SPManager)
+    
+    func spDefaultBackgroundDidAddedToViewAndCommited(_ spview:UIView,_ manager:SPManager)
+    
+    func spDefaultBackgroundAnimationDidRun(_ spview:UIView,_ manager:SPManager)
+    
+    func animationDidStart(_ spview:UIView,_ manager:SPManager,_ anim: CAAnimation?)
+    
+    func spAnimationDidStop(_ spview:UIView,_ manager:SPManager,_ anim: CAAnimation?, finished flag: Bool,_ error:NSError?)
 }
 
+
+/// 背景代理
 public protocol SPBackgroundProtocol:NSObjectProtocol {
     
     func backgroundCount(_ spview:UIView) -> Int
@@ -126,41 +161,48 @@ public class SPManager:NSObject{
     var backgrounds : [UIView] = [UIView]()
     
     var animating : Bool = false
-    
+
     public func spNoAnimation(_ closure: (_ make: SPAlphaParam ) -> Void = {_ in }) {
         let param = SPAlphaParam()
+        self.target?.spDelegate?.spWillPackageAnimation(self.target ?? UIView(), self)
         param.target = self.target
         param.type = .alpha
         param.from = self.target?.alpha ?? 0.0
         param.to = (self.step == .show) ? 1.0 : 0.0
         closure(param)
         self.packageParams.append(param)
+        self.target?.spDelegate?.spDidPackageAnimation(self.target ?? UIView(), self, param)
         self.finish(SPParam.init(0.0))
     }
     
     public func spAlphaAnimation(_ closure: (_ make: SPAlphaParam ) -> Void = {_ in }) -> SPManager {
         let param = SPAlphaParam()
+        self.target?.spDelegate?.spWillPackageAnimation(self.target ?? UIView(), self)
         param.target = self.target
         param.type = .alpha
         param.from = self.target?.alpha ?? 0.0
         param.to = (self.step == .show) ? 1.0 : 0.0
         closure(param)
         self.packageParams.append(param)
+        self.target?.spDelegate?.spDidPackageAnimation(self.target ?? UIView(), self, param)
         return self
     }
     
     public func spSlideAnimation(_ closure: (_ make: SPSlideParam ) -> Void = {_ in }) -> SPManager {
         let param = SPSlideParam()
+        self.target?.spDelegate?.spWillPackageAnimation(self.target ?? UIView(), self)
         param.target = self.target
         param.type = .slide
         param.slideDirection = .toTop
         closure(param)
         self.packageParams.append(param)
+        self.target?.spDelegate?.spDidPackageAnimation(self.target ?? UIView(), self, param)
         return self
     }
     
     public func spScaleAnimation(_ closure: (_ make: SPScaleParam ) -> Void = {_ in }) -> SPManager {
         let param = SPScaleParam()
+        self.target?.spDelegate?.spWillPackageAnimation(self.target ?? UIView(), self)
         param.target = self.target
         param.type = .scale
         param.spring = false
@@ -168,22 +210,26 @@ public class SPManager:NSObject{
         param.to = (self.step == .show) ? 1.0 : 0.0
         closure(param)
         self.packageParams.append(param)
+        self.target?.spDelegate?.spDidPackageAnimation(self.target ?? UIView(), self, param)
         return self
     }
     
     public func spFoldAnimation(_ closure: (_ make: SPFoldParam ) -> Void = {_ in }) -> SPManager {
         let param = SPFoldParam()
+        self.target?.spDelegate?.spWillPackageAnimation(self.target ?? UIView(), self)
         param.target = self.target
         param.type = .fold
         param.targetSize = self.target?.frame.size ?? CGSize.zero
         param.unfoldDirection = .toBottom
         closure(param)
         self.packageParams.append(param)
+        self.target?.spDelegate?.spDidPackageAnimation(self.target ?? UIView(), self, param)
         return self
     }
     
     public func spBubbleAnimation(_ closure: (_ make: SPBubbleParam ) -> Void = {_ in }) -> SPManager {
         let param = SPBubbleParam()
+        self.target?.spDelegate?.spWillPackageAnimation(self.target ?? UIView(), self)
         param.target = self.target
         param.type = .bubble
         param.pinPoint = self.target?.center ?? CGPoint.zero
@@ -191,6 +237,20 @@ public class SPManager:NSObject{
         param.bubbleDirection = .toLeftBottom
         closure(param)
         self.packageParams.append(param)
+        self.target?.spDelegate?.spDidPackageAnimation(self.target ?? UIView(), self, param)
+        return self
+    }
+    
+    public func spRotationAnimation(_ closure: (_ make: SPRotationParam ) -> Void = {_ in }) -> SPManager {
+        let param = SPRotationParam()
+        self.target?.spDelegate?.spWillPackageAnimation(self.target ?? UIView(), self)
+        param.target = self.target
+        param.type = .rotation
+        param.from = (self.step == .show) ? 0.0 : Double.pi * 2.0
+        param.to = (self.step == .show) ? Double.pi * 2.0 : 0.0
+        closure(param)
+        self.packageParams.append(param)
+        self.target?.spDelegate?.spDidPackageAnimation(self.target ?? UIView(), self, param)
         return self
     }
     
@@ -201,17 +261,19 @@ public class SPManager:NSObject{
 }
 
 
-extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
-
-
-    public func spshow(_ inView: UIView?) -> SPManager {
+extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegate{
+  
+    
+    public func spshow(_ inView: UIView? = UIApplication.shared.keyWindow) -> SPManager {
         self.spManager.inView = inView
         self.spManager.step = .show
         self.spManager.target = self
         self.spDataSource = self
+        self.spDelegate = self
         self.spBackgroundDelegate = self
         self.spManager.packageParams.removeAll()
         self.ending = SPEnding()
+        self.spDelegate?.spInit(self, self.spManager)
         return self.spManager
     }
     
@@ -219,18 +281,35 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
         self.spManager.step = .hide
         self.spManager.target = self
         self.spDataSource = self
+        self.spDelegate = self
         self.spBackgroundDelegate = self
         self.spManager.packageParams.removeAll()
         self.ending = SPEnding()
+        self.spDelegate?.spInit(self, self.spManager)
+        
         return self.spManager
     }
     
     
     func spMain(_ manager:SPManager){
         
-        if self.spManager.animating {
+        // 将要开始执行动画操作
+        self.spDelegate?.spWillBegin(self, self.spManager)
+        
+        //如果无inView
+        if self.spManager.inView == nil {
+            self.spDelegate?.spAnimationDidStop(self, self.spManager, nil, finished: false, NSError.init(domain: "inView is null", code: 100, userInfo: nil))
             return
         }
+        
+        //如果正在执行动画则不执行事务
+        if self.spManager.animating {
+            self.spDelegate?.spAnimationDidStop(self, self.spManager, nil, finished: false, NSError.init(domain: "animating", code: 101, userInfo: nil))
+            return
+        }
+        
+        
+        self.spDelegate?.spWillGetAnimations(self, self.spManager)
         
         for param in manager.packageParams {
             if let prm = param as? SPBaseParam {
@@ -243,6 +322,8 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
                 }
             }
         }
+        
+        self.spDelegate?.spDidGetAnimations(self, self.spManager)
         
         var animations = [CAAnimation]()
         var maskAnimations = [CAAnimation]()
@@ -260,38 +341,17 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
             }
         }
         
-        if self.spManager.step == .show && self.spManager.inView != nil{
-            // 背景
-            let backgroundCount = self.spBackgroundDelegate?.backgroundCount(self) ?? 0
-            if backgroundCount > 0 {
-                for index in 0..<backgroundCount {
-                    let background = self.spBackgroundDelegate?.backgroundViewForIndex(self, index: index)
-                    if let bk = background {
-                        self.spManager.backgrounds.append(bk)
-                        self.spManager.inView?.addSubview(bk)
-                    }
-                }
-            }else{
-                if self.spManager.param.backgroundView != nil{
-                    self.spManager.param.backgroundView?.alpha = 0.0
-                    self.spManager.param.backgroundView?.frame = self.spManager.inView?.bounds ?? sb
-                    if let bk = self.spManager.param.backgroundView as? UIButton {
-                        bk.addTarget(self, action: #selector(defaultBackgroundClick(ins:)), for: .touchUpInside)
-                    }
-                    self.spManager.inView?.addSubview(self.spManager.param.backgroundView!)
-                    UIView.animate(withDuration: self.spManager.param.duration, delay: self.spManager.param.delay, options: UIViewAnimationOptions.curveEaseOut) {
-                        self.spManager.param.backgroundView?.alpha = 1.0
-                    } completion: { (finish) in}
-                }
-            }
-            
-            // 弹窗视图
+        self.spDelegate?.spWillCommit(self, self.spManager, animations, maskAnimations)
+        
+        // 处理图层
+        if animations.count > 0 || maskAnimations.count > 0 {
             if self.superview != nil{
                 self.removeFromSuperview()
             }
             self.spManager.inView?.addSubview(self)
         }
         
+        // 提交动画
         if animations.count > 0 {
             let group = self.spAnimationGroup()
             group.animations = animations
@@ -301,6 +361,7 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
                 self.spManager.animating = true
                 self.layer.removeAllAnimations()
                 self.layer.add(group, forKey: manager.step == .show ? "spshow" : "sphide")
+                self.spDelegate?.spAnimationDidRun(self, self.spManager, "normal")
             }
         }
         
@@ -313,6 +374,42 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
                 self.spManager.animating = true
                 self.shapeLayer.removeAllAnimations()
                 self.shapeLayer.add(group, forKey: manager.step == .show ? "spshow" : "sphide")
+                self.spDelegate?.spAnimationDidRun(self, self.spManager, "mask")
+            }
+        }
+        
+        self.spDelegate?.spDidCommited(self, self.spManager)
+        
+        
+        if self.spManager.step == .show{
+            // 背景
+            self.spDelegate?.spWillDoBackground(self, self.spManager)
+            
+            let backgroundCount = self.spBackgroundDelegate?.backgroundCount(self) ?? 0
+            if backgroundCount > 0 {
+                for index in 0..<backgroundCount {
+                    let background = self.spBackgroundDelegate?.backgroundViewForIndex(self, index: index)
+                    if let bk = background {
+                        self.spManager.backgrounds.append(bk)
+                        self.spManager.inView?.addSubview(bk)
+                        self.spDelegate?.spBackgroundDidAddedToView(self, self.spManager, bk, index)
+                    }
+                }
+                self.spDelegate?.spBackgroundDidAddedAll(self, self.spManager)
+            }else{
+                if self.spManager.param.backgroundView != nil{
+                    self.spManager.param.backgroundView?.alpha = 0.0
+                    self.spManager.param.backgroundView?.frame = self.spManager.inView?.bounds ?? sb
+                    if let bk = self.spManager.param.backgroundView as? UIButton {
+                        bk.addTarget(self, action: #selector(defaultBackgroundClick(ins:)), for: .touchUpInside)
+                    }
+                    self.spManager.inView?.addSubview(self.spManager.param.backgroundView!)
+                    UIView.animate(withDuration: self.spManager.param.duration, delay: self.spManager.param.delay, options: UIViewAnimationOptions.curveEaseOut) {
+                        self.spManager.param.backgroundView?.alpha = 1.0
+                        self.spDelegate?.spDefaultBackgroundAnimationDidRun(self, self.spManager)
+                    } completion: { (finish) in}
+                    self.spDelegate?.spDefaultBackgroundDidAddedToViewAndCommited(self, self.spManager)
+                }
             }
         }
     }
@@ -321,6 +418,7 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
     @objc func defaultBackgroundClick(ins:UIButton){
         
         if self.spBackgroundDelegate?.backgroundTouch(self, self.spManager.param.backgroundView ?? UIView.init()) == true {
+            
             self.spManager.param.delay = 0.0
             self.sphide.spAlphaAnimation { (param) in
                 param.to = 0.0
@@ -328,19 +426,22 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
             
             UIView.animate(withDuration: self.spManager.param.duration, delay: 0, options: UIViewAnimationOptions.curveEaseOut) {
                 self.spManager.param.backgroundView?.alpha = 0.0
-            } completion: { (finish) in}
+            } completion: { (finish) in
+                self.spManager.param.backgroundView?.removeFromSuperview()
+            }
         }
     }
     
     
     public func animationDidStart(_ anim: CAAnimation){
-        
+        self.spDelegate?.animationDidStart(self, self.spManager, anim)
     }
-
     
     
     public func animationDidStop(_ anim: CAAnimation, finished flag: Bool){
-        print("======%p",anim)
+        
+        self.spDelegate?.spAnimationDidStop(self, self.spManager, anim, finished: flag, nil)
+        
         if self.ending?.alpha != -1 {
             self.alpha = self.ending?.alpha ?? self.alpha
         }
@@ -375,10 +476,11 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
     }
     
     
+
     public func animationTypes(_ spview: UIView, _ step: SPStepType, _ param: Any) -> [SPBaseAnimationType] {
         if let baseParam = param as? SPBaseParam{
             if baseParam.type == .none {
-                return [.none]
+                return []
             }else if baseParam.type == .alpha {
                 return [.opacity]
             }else if baseParam.type == .slide {
@@ -395,8 +497,10 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
                 }
             }else if baseParam.type == .mask {
                 return [.path]
-            }else if baseParam.type == .other {
-                return [.none]
+            }else if baseParam.type == .rotation {
+                return [.rotation]
+            }else if baseParam.type == .custom {
+                return [.custom]
             }
         }
         return []
@@ -408,15 +512,7 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
         
         if type == .none {
             
-            let from:CGFloat = self.alpha
-            var to:CGFloat = self.alpha
-            if step == .show {
-                to = 1.0
-            }else if step == .hide {
-                to = 0.0
-            }
-            self.ending?.alpha = to
-            animation = CAAnimation.spOpacityAnimation(values: [from,to], duration: 0.0)
+            return nil
             
         }else if type == .opacity,let alphaParam = param as? SPAlphaParam {
             
@@ -532,6 +628,18 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
             let toPath = maskParam.to
             
             animation = CAAnimation.spPathAnimation(values: [fromPath,toPath], duration: maskParam.duration)
+            
+        }else if type == .rotation,let rotationParam = param as? SPRotationParam {
+
+            let from:Double = rotationParam.from
+            let to:Double = rotationParam.to
+            
+            animation = CAAnimation.spRotationAnimation(rotationType: rotationParam.rotationType, values: [from,to], duration: rotationParam.duration)
+            
+        }else if type == .custom {
+            
+            animation = self.customAnimationForIndex(spview, step, param, type: type, index: index)
+            assert(animation != nil, "please implement customAnimationForIndex method,and return a valid CAAnimation instance")
         }
         
         animation?.duration = self.spManager.param.duration
@@ -541,5 +649,75 @@ extension UIView:SPDataSource,SPBackgroundProtocol,CAAnimationDelegate{
         return animation
     }
     
+    public func customAnimationForIndex(_ spview: UIView, _ step: SPStepType, _ param: Any, type: SPBaseAnimationType, index: Int) -> CAAnimation? {
+        return nil
+    }
     
+    
+    
+    public func spInit(_ spview: UIView, _ manager: SPManager) {
+        
+    }
+    
+    public func spWillPackageAnimation(_ spview: UIView, _ manager: SPManager) {
+        
+    }
+    
+    public func spDidPackageAnimation(_ spview: UIView, _ manager: SPManager, _ param: SPBaseParam) {
+        
+    }
+    
+    public func spWillBegin(_ spview: UIView, _ manager: SPManager) {
+        
+    }
+    
+    public func spWillGetAnimations(_ spview: UIView, _ manager: SPManager) {
+        
+    }
+    
+    public func spDidGetAnimations(_ spview: UIView, _ manager: SPManager) {
+        
+    }
+    
+    public func spWillCommit(_ spview: UIView, _ manager: SPManager, _ animations: [CAAnimation], _ maskAnimations: [CAAnimation]) {
+        
+    }
+    
+    public func spDidCommited(_ spview: UIView, _ manager: SPManager) {
+        
+    }
+    
+    public func spAnimationDidRun(_ spview: UIView, _ manager: SPManager, _ mark: Any) {
+        
+    }
+    
+    public func spWillDoBackground(_ spview: UIView, _ manager: SPManager) {
+        
+    }
+    
+    public func spBackgroundDidAddedToView(_ spview: UIView, _ manager: SPManager, _ backgroundView: UIView, _ index: Int) {
+        
+    }
+    
+    public func spBackgroundDidAddedAll(_ spview: UIView, _ manager: SPManager) {
+        
+    }
+    
+    public func spDefaultBackgroundDidAddedToViewAndCommited(_ spview: UIView, _ manager: SPManager) {
+        
+    }
+    
+    public func spDefaultBackgroundAnimationDidRun(_ spview: UIView, _ manager: SPManager) {
+        
+    }
+   
+    public func animationDidStart(_ spview: UIView, _ manager: SPManager, _ anim: CAAnimation?) {
+        
+    }
+    
+    public func spAnimationDidStop(_ spview: UIView, _ manager: SPManager, _ anim: CAAnimation?, finished flag: Bool, _ error: NSError?) {
+        
+    }
+    
+
 }

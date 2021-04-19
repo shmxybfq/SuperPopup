@@ -31,7 +31,7 @@
 
 /* Begin PBXFileReference section */
 		1008C8EA91532D9F5EB211A1 /* Pods_SuperPopup_Tests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SuperPopup_Tests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		44DD091138865504862FDC36 /* SuperPopup.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = SuperPopup.podspec; path = ../SuperPopup.podspec; sourceTree = "<group>"; };
+		44DD091138865504862FDC36 /* SuperPopup.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = SuperPopup.podspec; path = ../SuperPopup.podspec; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		4E33C7B982DA75DA777A9CE2 /* Pods_SuperPopup_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SuperPopup_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		520E629831E23D2BA9736003 /* Pods-SuperPopup_Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SuperPopup_Example.release.xcconfig"; path = "Target Support Files/Pods-SuperPopup_Example/Pods-SuperPopup_Example.release.xcconfig"; sourceTree = "<group>"; };
 		555D97990CDE2B5DF00571A1 /* Pods-SuperPopup_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SuperPopup_Tests.debug.xcconfig"; path = "Target Support Files/Pods-SuperPopup_Tests/Pods-SuperPopup_Tests.debug.xcconfig"; sourceTree = "<group>"; };

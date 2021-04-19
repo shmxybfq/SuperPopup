@@ -13,6 +13,7 @@ let kSpDataSourceKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kSp
 let kShowAnimationsKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kShowAnimationsKey".hashValue)
 let kHideAnimationsKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kHideAnimationsKey".hashValue)
 let kEndingKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kEndingKey".hashValue)
+let kDelegateKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kDelegateKey".hashValue)
 let kBackgroundsKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kBackgroundsKey".hashValue)
 
 public extension UIView{
@@ -56,6 +57,15 @@ public extension UIView{
         }
         set {
             objc_setAssociatedObject(self, kSpDataSourceKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_ASSIGN)
+        }
+    }
+    
+    var spDelegate:SPDelegate?{
+        get {
+            return objc_getAssociatedObject(self, kDelegateKey) as? SPDelegate
+        }
+        set {
+            objc_setAssociatedObject(self, kDelegateKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_ASSIGN)
         }
     }
     

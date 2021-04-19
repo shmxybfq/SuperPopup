@@ -8,6 +8,19 @@
 import UIKit
 import Foundation
 
+public class SPCustomParam:SPBaseParam{
+   
+}
+
+public class SPRotationParam:SPBaseParam{
+    //
+    var from : Double = 0.0
+    //
+    var to : Double = 0.0
+    //
+    var rotationType : SPRotationType = .z
+}
+
 public class SPMaskParam:SPBaseParam{
     //
     var from : UIBezierPath = UIBezierPath.init()
