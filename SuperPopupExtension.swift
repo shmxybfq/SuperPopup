@@ -14,6 +14,7 @@ let kShowAnimationsKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "k
 let kHideAnimationsKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kHideAnimationsKey".hashValue)
 let kEndingKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kEndingKey".hashValue)
 let kBackgroundsKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kBackgroundsKey".hashValue)
+
 public extension UIView{
     
     var spManager:SPManager{

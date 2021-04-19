@@ -27,10 +27,10 @@ class ViewController: UIViewController {
         
         let param = SPParam.init()
         param.delay = 0
-        param.duration = 1
+        param.duration = 3
         param.backgroundView = nil
         //滑动时有问题
-        param.offset = CGPoint.zero
+        param.offset = CGPoint.init(x: 0, y: -(UIScreen.main.bounds.size.height - 200.0) * 0.5)
         
         if self.showed == false{
 
@@ -43,7 +43,13 @@ class ViewController: UIViewController {
           
             //滑动
             alert?.sphide.spSlideAnimation({ (param) in
-                param.slideDirection = .toLeft
+                param.slideDirection = .toTop
+                param.to = CGPoint.init(x: self.alert?.center.x ?? 0, y: (self.alert?.center.y ?? 0) - 200)
+            }).spAlphaAnimation({ (param) in
+                param.to = 0.0
+            }).spScaleAnimation({ (param) in
+                param.to = 0.0
+                param.target?.layer.anchorPoint = CGPoint.init(x: 0.5, y: 0)
             }).finish(param)
             
         }
