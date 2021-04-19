@@ -8,27 +8,26 @@
 import UIKit
 import Foundation
 
-
-let kAnimationTagKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kAnimationTagKey".hashValue)
-let kAnimationValueKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kAnimationValueKey".hashValue)
+private var kAnimationTagKey: Void?
+private var kAnimationValueKey: Void?
 
 public extension CAAnimation{
   
     
     var bindTag:String?{
         get {
-            return  objc_getAssociatedObject(self, kAnimationTagKey) as? String
+            return  objc_getAssociatedObject(self, &kAnimationTagKey) as? String
         }
         set {
-            objc_setAssociatedObject(self, kAnimationTagKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_COPY_NONATOMIC)
+            objc_setAssociatedObject(self, &kAnimationTagKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_COPY_NONATOMIC)
         }
     }
     var bindValue:Any?{
         get {
-            return objc_getAssociatedObject(self, kAnimationValueKey)
+            return objc_getAssociatedObject(self, &kAnimationValueKey)
         }
         set {
-            objc_setAssociatedObject(self, kAnimationValueKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            objc_setAssociatedObject(self, &kAnimationValueKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         }
     }
     

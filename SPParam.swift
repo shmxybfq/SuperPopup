@@ -8,24 +8,25 @@
 import UIKit
 import Foundation
 
+
 public class SPCustomParam:SPBaseParam{
    
 }
 
 public class SPRotationParam:SPBaseParam{
+    /// 旋转起始角度
+    public var from : Double = 0.0
     //
-    var from : Double = 0.0
+    public var to : Double = 0.0
     //
-    var to : Double = 0.0
-    //
-    var rotationType : SPRotationType = .z
+    public var rotationType : SPRotationType = .z
 }
 
 public class SPMaskParam:SPBaseParam{
     //
-    var from : UIBezierPath = UIBezierPath.init()
+    public var from : UIBezierPath = UIBezierPath.init()
     //
-    var to : UIBezierPath = UIBezierPath.init()
+    public var to : UIBezierPath = UIBezierPath.init()
     
 }
 

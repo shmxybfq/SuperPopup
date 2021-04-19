@@ -33,7 +33,6 @@
 		BD4953074A12E769ED4E6C94F5E73694 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DA24A38BA9EE106B59E3D4C8DD1CE0E /* UIKit.framework */; };
 		BD91B8762621817F0051787E /* CAAnimationExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD91B8752621817F0051787E /* CAAnimationExtension.swift */; };
 		BD91B87C2621827F0051787E /* SPParam.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD91B87B2621827F0051787E /* SPParam.swift */; };
-		BD91B88226218F820051787E /* SuperPopupExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD91B88126218F820051787E /* SuperPopupExtension.swift */; };
 		C49D52712466511E332C952834C81FE1 /* FBSnapshotTestCasePlatform.h in Headers */ = {isa = PBXBuildFile; fileRef = 88B1DEEBF6316A84D7413645212492FF /* FBSnapshotTestCasePlatform.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		CA63ADACAC6C2BF1E30108E6BEF68A09 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 57221B54D014471C3D3E1925EFC917C8 /* Foundation.framework */; };
 		D04AAC8B22E4A4DC4F39891C4E52F251 /* UIImage+Diff.h in Headers */ = {isa = PBXBuildFile; fileRef = 96187BF3038121CC146335E9FF0B0AFF /* UIImage+Diff.h */; settings = {ATTRIBUTES = (Private, ); }; };
@@ -110,7 +109,6 @@
 		B7103CA00AED20722C5B69CA5B4F6938 /* FBSnapshotTestCase-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "FBSnapshotTestCase-Info.plist"; sourceTree = "<group>"; };
 		BD91B8752621817F0051787E /* CAAnimationExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CAAnimationExtension.swift; sourceTree = "<group>"; };
 		BD91B87B2621827F0051787E /* SPParam.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPParam.swift; sourceTree = "<group>"; };
-		BD91B88126218F820051787E /* SuperPopupExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperPopupExtension.swift; sourceTree = "<group>"; };
 		C14F0D36C865823B5BDF72B6174B3F98 /* SuperPopup.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = SuperPopup.release.xcconfig; sourceTree = "<group>"; };
 		C38F01BB753C1B6871EBFE04CAA138E6 /* Pods-SuperPopup_Example-acknowledgements.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Pods-SuperPopup_Example-acknowledgements.plist"; sourceTree = "<group>"; };
 		C3C3A2D60DCC2FB904622386DB07DCD8 /* Pods-SuperPopup_Tests-frameworks.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "Pods-SuperPopup_Tests-frameworks.sh"; sourceTree = "<group>"; };
@@ -337,7 +335,6 @@
 			isa = PBXGroup;
 			children = (
 				ECA735328D9AEAAF070DC7E96564CF8E /* SuperPopup.swift */,
-				BD91B88126218F820051787E /* SuperPopupExtension.swift */,
 				BD91B87B2621827F0051787E /* SPParam.swift */,
 				BD91B8752621817F0051787E /* CAAnimationExtension.swift */,
 				86FE841A2CC150D5260AEF776C0C8DC4 /* Pod */,
@@ -564,7 +561,6 @@
 				151CCB6FD9F3304B9052EC02EEF25ADB /* SuperPopup-dummy.m in Sources */,
 				BD91B8762621817F0051787E /* CAAnimationExtension.swift in Sources */,
 				0DB0129E971B1CA0F313727BEDC7D450 /* SuperPopup.swift in Sources */,
-				BD91B88226218F820051787E /* SuperPopupExtension.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

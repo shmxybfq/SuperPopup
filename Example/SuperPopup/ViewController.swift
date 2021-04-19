@@ -41,7 +41,11 @@ class ViewController: UIViewController {
 //            }.finish(param)
             
             alert?.spshow(self.view).spRotationAnimation({ (param) in
-                
+                param.rotationType = .z
+            }).spRotationAnimation({ (param) in
+                param.rotationType = .x
+            }).spRotationAnimation({ (param) in
+                param.rotationType = .y
             }).spScaleAnimation({ (param) in
                 
             }).spAlphaAnimation({ (param) in
@@ -62,7 +66,11 @@ class ViewController: UIViewController {
 //            }).finish(param)
             
             alert?.sphide.spRotationAnimation({ (param) in
-                
+                param.rotationType = .z
+            }).spRotationAnimation({ (param) in
+                param.rotationType = .x
+            }).spRotationAnimation({ (param) in
+                param.rotationType = .y
             }).spScaleAnimation({ (param) in
                 
             }).spAlphaAnimation({ (param) in
