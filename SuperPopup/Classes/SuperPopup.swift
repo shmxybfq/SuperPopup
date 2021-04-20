@@ -426,6 +426,9 @@ public class SPManager:NSObject{
 extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegate{
   
     
+    /// 显示弹窗入口函数
+    /// - Parameter inView: 将弹窗弹到那个view上
+    /// - Returns: 弹窗管理类
     public func spshow(_ inView: UIView? = UIApplication.shared.keyWindow) -> SPManager {
         self.spManager.inView = inView
         self.spManager.step = .show
@@ -439,7 +442,10 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         return self.spManager
     }
     
-    public var sphide: SPManager {
+
+    /// 隐藏弹窗入口函数
+    /// - Returns: 弹窗管理类
+    public func sphide() -> SPManager {
         self.spManager.step = .hide
         self.spManager.target = self
         self.spDataSource = self
@@ -448,31 +454,34 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         self.spManager.packageParams.removeAll()
         self.ending = SPEnding()
         self.spDelegate?.spInited(self, self.spManager)
-        
         return self.spManager
     }
     
     
+    /// 动画初始化完毕,开始执行
+    /// - Parameter manager: 弹窗管理类
     func spMain(_ manager:SPManager){
         
-        // 将要开始执行动画操作
+        /// 将要开始执行动画操作
         self.spDelegate?.spWillBegin(self, self.spManager)
         
-        //如果无inView
+        /// 如果无inView,动画直接结束
         if self.spManager.inView == nil {
             self.spDelegate?.spAnimationDidStop(self, self.spManager, nil, finished: false, NSError.init(domain: "inView is null", code: 100, userInfo: nil))
+            #if DEBUG
+            assert(false, "inView can't be nil")
+            #endif
             return
         }
         
-        //如果正在执行动画则不执行事务
+        /// 如果正在执行动画则不执行事务
         if self.spManager.animating {
             self.spDelegate?.spAnimationDidStop(self, self.spManager, nil, finished: false, NSError.init(domain: "animating", code: 101, userInfo: nil))
             return
         }
         
-        
+        /// 根据打包参数获取动画类型和CAAnimation对象
         self.spDelegate?.spWillGetAnimations(self, self.spManager)
-        
         for param in manager.packageParams {
             if let prm = param as? SPBaseParam {
                 let types = self.spDataSource?.animationTypes(self, manager.step, prm) ?? []
@@ -485,8 +494,8 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
             }
         }
         
+        /// 将CAAnimation对象分组
         self.spDelegate?.spDidGetAnimations(self, self.spManager)
-        
         var animations = [CAAnimation]()
         var maskAnimations = [CAAnimation]()
         for (_,param) in manager.packageParams.enumerated() {
@@ -503,9 +512,10 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
             }
         }
         
+        
         self.spDelegate?.spWillCommit(self, self.spManager, animations, maskAnimations)
         
-        // 处理图层
+        /// 处理图层
         if animations.count > 0 || maskAnimations.count > 0 {
             if self.superview != nil{
                 self.removeFromSuperview()
@@ -513,12 +523,13 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
             self.spManager.inView?.addSubview(self)
         }
         
-        // 提交动画
+        /// 提交动画
         if animations.count > 0 {
             let group = self.spAnimationGroup()
             group.animations = animations
             group.duration = self.spManager.param.duration
             group.delegate = self
+            /// delay调用
             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + self.spManager.param.delay) {
                 self.spManager.animating = true
                 self.layer.removeAllAnimations()
@@ -532,6 +543,7 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
             group.animations = maskAnimations
             group.duration = self.spManager.param.duration
             group.delegate = self
+            /// delay调用
             DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + self.spManager.param.delay) {
                 self.spManager.animating = true
                 self.shapeLayer.removeAllAnimations()
@@ -540,14 +552,18 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
             }
         }
         
+        /// 动画已操作提交但可能由于延时调用而未被真正执行
         self.spDelegate?.spDidCommited(self, self.spManager)
         
         
+        /// 处理背景
         if self.spManager.step == .show{
-            // 背景
+        
             self.spDelegate?.spWillDoBackground(self, self.spManager)
             
             let backgroundCount = self.spBackgroundDelegate?.backgroundCount(self) ?? 0
+            
+            /// 优先使用自定义多背景,如未使用,则使用默认背景
             if backgroundCount > 0 {
                 for index in 0..<backgroundCount {
                     let background = self.spBackgroundDelegate?.backgroundViewForIndex(self, index: index)
@@ -559,6 +575,7 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
                 }
                 self.spDelegate?.spBackgroundDidAddedAll(self, self.spManager)
             }else{
+                /// 默认背景为UIButton,如此背景被替换则需要使用者自己实现背景点击事件
                 if self.spManager.param.backgroundView != nil{
                     self.spManager.param.backgroundView?.alpha = 0.0
                     self.spManager.param.backgroundView?.frame = self.spManager.inView?.bounds ?? sb
@@ -576,13 +593,14 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         }
     }
     
-    // 默认背景点击
+    /// 默认背景点击
     @objc func defaultBackgroundClick(ins:UIButton){
         
+        /// 使用者可通过重写 backgroundTouch 方法实现背景自定义点击事件
         if self.spBackgroundDelegate?.backgroundTouch(self, self.spManager.param.backgroundView ?? UIView.init()) == true {
             
             self.spManager.param.delay = 0.0
-            self.sphide.spAlphaAnimation { (param) in
+            self.sphide().spAlphaAnimation { (param) in
                 param.to = 0.0
             }.finish(self.spManager.param)
             
@@ -595,11 +613,17 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
     }
     
     
+    /// CAAnimation代理
+    /// - Parameter anim: 动画对象
     public func animationDidStart(_ anim: CAAnimation){
         self.spDelegate?.animationDidStart(self, self.spManager, anim)
     }
     
     
+    /// CAAnimation代理
+    /// - Parameters:
+    ///   - anim: 动画对象
+    ///   - flag: 动画是否已成功执行
     public func animationDidStop(_ anim: CAAnimation, finished flag: Bool){
         
         self.spDelegate?.spAnimationDidStop(self, self.spManager, anim, finished: flag, nil)
@@ -625,20 +649,38 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
     }
     
     
-    @objc open func backgroundCount(_ spview: UIView) -> Int {
-        return 0
-    }
-    
-    @objc open func backgroundViewForIndex(_ spview: UIView, index: Int) -> UIView {
-        return UIButton.init(type: .custom)
-    }
-    
-    @objc open func backgroundTouch(_ spview: UIView, _ background: UIView) -> Bool {
-        return true
-    }
-    
-    
+    /*
+     _______________功能模块分割线_______________________
+     _______________########_______________________
+     ______________##########_______________________
+    ______________############_____________________
+    ______________#############____________________
+    _____________##__###########___________________
+    ____________###__######_#####__________________
+    ____________###_#######___####_________________
+    ___________###__##########_####________________
+    __________####__###########_####_______________
+    ________#####___###########__#####_____________
+    _______######___###_########___#####___________
+    _______#####___###___########___######_________
+    ______######___###__###########___######_______
+    _____######___####_##############__######______
+    ____#######__#####################_#######_____
+    ____#######__##############################____
+    ___#######__######_#################_#######___
+    ___#######__######_######_#########___######___
+    ___#######____##__######___######_____######___
+    ___#######________######____#####_____#####____
+    ____######________#####_____#####_____####_____
+    _____#####________####______#####_____###______
+    ______#####______;###________###______#________
+    ________##_______####________####______________
+             葱官赐福  百无禁忌
+     */
 
+    /// ************************************ SPDataSource 代理方法自实现 ************************************
+    
+    /// SPDataSource代理方法,参考代理注释-子类重写此方法以实现定制化
     public func animationTypes(_ spview: UIView, _ step: SPStepType, _ param: Any) -> [SPBaseAnimationType] {
         if let baseParam = param as? SPBaseParam{
             if baseParam.type == .none {
@@ -668,6 +710,8 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         return []
     }
   
+    
+    /// SPDataSource代理方法,参考代理注释-子类重写此方法以实现定制化
     public func animationForIndex(_ spview: UIView, _ step: SPStepType, _ param: Any, type: SPBaseAnimationType, index: Int) -> CAAnimation? {
         
         var animation:CAAnimation? = nil
@@ -811,11 +855,42 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         return animation
     }
     
+    /// SPDataSource代理方法,参考代理注释-子类重写此方法以实现定制化
     public func customAnimationForIndex(_ spview: UIView, _ step: SPStepType, _ param: Any, type: SPBaseAnimationType, index: Int) -> CAAnimation? {
         return nil
     }
     
     
+    /// ************************************ SPDelegate 代理方法自实现 ************************************
+    
+    /// 背景代理: 自定义背景数量-重写此方法以实现自定义背景功能
+    /// - Parameter spview: 动画目标类
+    /// - Returns: 背景数量
+    @objc open func backgroundCount(_ spview: UIView) -> Int {
+        return 0
+    }
+    
+    /// 背景代理: 自定义背景view-重写此方法以实现自定义背景功能
+    /// - Parameters:
+    ///   - spview: 动画目标类
+    ///   - index: 下标
+    /// - Returns: 背景view
+    @objc open func backgroundViewForIndex(_ spview: UIView, index: Int) -> UIView {
+        return UIButton.init(type: .custom)
+    }
+    
+    
+    /// 背景代理: 默认背景点击事件-重写此方法以实现自定义背景功能
+    /// - Parameters:
+    ///   - spview:
+    ///   - background: 默认背景view对象
+    /// - Returns: 是否继续使用对默认背景的动画处理
+    @objc open func backgroundTouch(_ spview: UIView, _ background: UIView) -> Bool {
+        return true
+    }
+    
+    
+    /// ************************************ SPBackgroundProtocol 代理方法自实现 ************************************
     
     public func spInited(_ spview: UIView, _ manager: SPManager) {
         
@@ -1245,35 +1320,6 @@ public extension UIView{
 
 
 
-/*
- _______________########_______________________
- ______________##########_______________________
-______________############_____________________
-______________#############____________________
-_____________##__###########___________________
-____________###__######_#####__________________
-____________###_#######___####_________________
-___________###__##########_####________________
-__________####__###########_####_______________
-________#####___###########__#####_____________
-_______######___###_########___#####___________
-_______#####___###___########___######_________
-______######___###__###########___######_______
-_____######___####_##############__######______
-____#######__#####################_#######_____
-____#######__##############################____
-___#######__######_#################_#######___
-___#######__######_######_#########___######___
-___#######____##__######___######_____######___
-___#######________######____#####_____#####____
-____######________#####_____#####_____####_____
-_____#####________####______#####_____###______
-______#####______;###________###______#________
-________##_______####________####______________
-                                      
-         葱官赐福  百无禁忌
- 
- */
 
 
 

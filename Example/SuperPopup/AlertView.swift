@@ -42,7 +42,7 @@ class AlertView: UIView {
 
     @objc func backgroundxx(){
         
-        self.sphide.spSlideAnimation { (param) in
+        self.sphide().spSlideAnimation { (param) in
             
         }.finish(SPParam.init(1))
     }

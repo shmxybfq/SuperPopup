@@ -103,7 +103,7 @@ public extension CAAnimation{
         return ani
     }
     
-    /// 形变-仅可用于CAShapeLayer
+    /// 形变-CAShapeLayer
     static func spPathAnimation(values:[UIBezierPath],duration:Double = 0.25) -> CAKeyframeAnimation{
         let ani = CAKeyframeAnimation.init()
         ani.keyPath = "path"

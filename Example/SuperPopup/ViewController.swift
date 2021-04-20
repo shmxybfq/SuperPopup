@@ -65,7 +65,7 @@ class ViewController: UIViewController {
 //                param.target?.layer.anchorPoint = CGPoint.init(x: 0.5, y: 0)
 //            }).finish(param)
             
-            alert?.sphide.spRotationAnimation({ (param) in
+            alert?.sphide().spRotationAnimation({ (param) in
                 param.rotationType = .z
             }).spRotationAnimation({ (param) in
                 param.rotationType = .x
