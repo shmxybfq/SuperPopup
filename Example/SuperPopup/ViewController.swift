@@ -29,8 +29,6 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
     
     var showed:Bool = false
     
-    let alert = Bundle.main.loadNibNamed("AlertView", owner: nil, options: nil)?.first as? AlertView
-
     var dataSource:[TestModel] = []
     
     override func viewDidLoad() {
@@ -79,64 +77,64 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
         return cell!
     }
     
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: false)
+        
+        let model:TestModel = self.dataSource[indexPath.section]
+        let name = model.data[indexPath.row]
+        
+        let param = SPParam.init()
+        param.duration = 0.3
+        
+        var popup:UIView?
+        
+        if name == "无动画" {
+            
+            popup = APopupView.creat("popup-1")
+            popup?.spshow().spNoAnimation()
+            
+        }else if name == "渐隐" {
+            
+            popup = APopupView.creat("popup-1")
+            //无任何参数写法:
+            //popup?.spshow().spAlphaAnimation().finish()
+            popup?.spshow().spAlphaAnimation({ (param) in
+                
+            }).finish(param)
+            
+        }else if name == "滑动" {
+            
+            popup = APopupView.creat("popup-1")
+            //无任何参数写法:默认水平中间位置,从下至上弹出来,刚好显示出来整个view
+            //popup?.spshow().spSlideAnimation().finish()
+            popup?.spshow().spSlideAnimation({ (param) in
+                param.slideDirection = .toTop
+                param.to = param.inView?.center ?? param.to
+            }).finish(param)
+            
+        }else if name == "缩放" {
+            
+            popup = APopupView.creat("popup-1")
+            
+        }else if name == "折叠" {
+            popup = APopupView.creat("popup-5")
+        }else if name == "泡泡" {
+            popup = APopupView.creat("popup-6")
+        }else if name == "旋转:XYZ" {
+            popup = APopupView.creat("popup-1")
+        }else if name == "遮罩" {
+            popup = APopupView.creat("popup-2")
+        }
+        
+
+    }
     
     //1.滑动时offset有问题
     //2.考虑隐藏时动画不同的问题
     //3.缩放动画和spring不能共存
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         
-        let param = SPParam.init()
-        param.delay = 0
-        param.duration = 1
-        param.backgroundView = nil
-        //滑动时有问题
-        param.offset = CGPoint.init(x: 0, y: -(UIScreen.main.bounds.size.height - 200.0) * 0.5)
-        
-        if self.showed == false{
 
-//            //滑动
-//            alert?.spshow(self.view).spSlideAnimation { (param) in
-//                param.slideDirection = .toTop
-//            }.finish(param)
-            
-            alert?.spshow(self.view).spRotationAnimation({ (param) in
-                param.rotationType = .z
-            }).spRotationAnimation({ (param) in
-                param.rotationType = .x
-            }).spRotationAnimation({ (param) in
-                param.rotationType = .y
-            }).spScaleAnimation({ (param) in
-                
-            }).spAlphaAnimation({ (param) in
-                
-            }).finish(param)
-            
-        }else{
-          
-//            //滑动
-//            alert?.sphide.spSlideAnimation({ (param) in
-//                param.slideDirection = .toTop
-//                param.to = CGPoint.init(x: self.alert?.center.x ?? 0, y: (self.alert?.center.y ?? 0) - 200)
-//            }).spAlphaAnimation({ (param) in
-//                param.to = 0.0
-//            }).spScaleAnimation({ (param) in
-//                param.to = 0.0
-//                param.target?.layer.anchorPoint = CGPoint.init(x: 0.5, y: 0)
-//            }).finish(param)
-            
-            alert?.sphide().spRotationAnimation({ (param) in
-                param.rotationType = .z
-            }).spRotationAnimation({ (param) in
-                param.rotationType = .x
-            }).spRotationAnimation({ (param) in
-                param.rotationType = .y
-            }).spScaleAnimation({ (param) in
-                
-            }).spAlphaAnimation({ (param) in
-                
-            }).finish(param)
-            
-        }
         
         self.showed = !self.showed
     }

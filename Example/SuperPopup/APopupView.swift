@@ -12,11 +12,17 @@ class APopupView: UIView {
     
     @IBOutlet weak var imageView: UIImageView!
     
-    init(_ imgName: String) {
+    override func awakeFromNib() {
+        super.awakeFromNib()
+    }
+    
+    public class func creat(_ imgName: String) -> APopupView {
+        let popup = Bundle.main.loadNibNamed("APopupView", owner: self, options: nil)?.first as! APopupView
+        
         
         let size = UIScreen.main.bounds.size
         var frame = CGRect.zero
-        let ratio = 0.5
+        let ratio = 0.3
         
         if imgName == "popup-1" {
             frame = CGRect.init(x: 0, y: 0, width: 901 * ratio, height: 927 * ratio)
@@ -61,12 +67,13 @@ class APopupView: UIView {
         }else if imgName == "share_weixin" {
             frame = CGRect.init(x: 0, y: 0, width: 120 * ratio, height: 120 * ratio)
         }
-        super.init(frame: frame)
-        self.imageView.image = UIImage.init(named: imgName)
+        
+        popup.frame = frame
+        popup.center = CGPoint.init(x: UIScreen.main.bounds.size.width * 0.5, y: UIScreen.main.bounds.size.height * 0.5)
+        popup.imageView.image = UIImage.init(named: imgName)
+        
+        return popup
     }
     
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
+
 }

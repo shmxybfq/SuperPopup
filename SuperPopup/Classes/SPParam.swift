@@ -80,6 +80,8 @@ public class SPAlphaParam:SPBaseParam{
 public class SPBaseParam:NSObject{
     // 弹框
     public weak var target:UIView?
+    // 弹框inView
+    public weak var inView:UIView?
     // 动画时间
     public var duration : Double = 0.25
     // 动画类型

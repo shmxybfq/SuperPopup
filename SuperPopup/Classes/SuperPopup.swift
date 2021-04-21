@@ -306,6 +306,7 @@ public class SPManager:NSObject{
         let param = SPAlphaParam()
         self.target?.spDelegate?.spWillPackageAnimation(self.target ?? UIView(), self)
         param.target = self.target
+        param.inView = self.inView
         param.type = .alpha
         param.from = self.target?.alpha ?? 0.0
         param.to = (self.step == .show) ? 1.0 : 0.0
@@ -323,6 +324,7 @@ public class SPManager:NSObject{
         let param = SPAlphaParam()
         self.target?.spDelegate?.spWillPackageAnimation(self.target ?? UIView(), self)
         param.target = self.target
+        param.inView = self.inView
         param.type = .alpha
         param.from = self.target?.alpha ?? 0.0
         param.to = (self.step == .show) ? 1.0 : 0.0
@@ -340,6 +342,7 @@ public class SPManager:NSObject{
         let param = SPSlideParam()
         self.target?.spDelegate?.spWillPackageAnimation(self.target ?? UIView(), self)
         param.target = self.target
+        param.inView = self.inView
         param.type = .slide
         param.slideDirection = .toTop
         closure(param)
@@ -355,6 +358,7 @@ public class SPManager:NSObject{
         let param = SPScaleParam()
         self.target?.spDelegate?.spWillPackageAnimation(self.target ?? UIView(), self)
         param.target = self.target
+        param.inView = self.inView
         param.type = .scale
         param.spring = false
         param.from = (self.step == .show) ? 0.0 : 1.0
@@ -372,6 +376,7 @@ public class SPManager:NSObject{
         let param = SPFoldParam()
         self.target?.spDelegate?.spWillPackageAnimation(self.target ?? UIView(), self)
         param.target = self.target
+        param.inView = self.inView
         param.type = .fold
         param.targetSize = self.target?.frame.size ?? CGSize.zero
         param.unfoldDirection = .toBottom
@@ -388,6 +393,7 @@ public class SPManager:NSObject{
         let param = SPBubbleParam()
         self.target?.spDelegate?.spWillPackageAnimation(self.target ?? UIView(), self)
         param.target = self.target
+        param.inView = self.inView
         param.type = .bubble
         param.pinPoint = self.target?.center ?? CGPoint.zero
         param.targetSize = self.target?.frame.size ?? CGSize.zero
@@ -405,6 +411,7 @@ public class SPManager:NSObject{
         let param = SPRotationParam()
         self.target?.spDelegate?.spWillPackageAnimation(self.target ?? UIView(), self)
         param.target = self.target
+        param.inView = self.inView
         param.type = .rotation
         param.from = (self.step == .show) ? 0.0 : Double.pi * 2.0
         param.to = (self.step == .show) ? Double.pi * 2.0 : 0.0
@@ -515,6 +522,43 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         
         self.spDelegate?.spWillCommit(self, self.spManager, animations, maskAnimations)
         
+        
+        /// 处理背景
+        if self.spManager.step == .show{
+        
+            self.spDelegate?.spWillDoBackground(self, self.spManager)
+            
+            let backgroundCount = self.spBackgroundDelegate?.backgroundCount(self) ?? 0
+            
+            /// 优先使用自定义多背景,如未使用,则使用默认背景
+            if backgroundCount > 0 {
+                for index in 0..<backgroundCount {
+                    let background = self.spBackgroundDelegate?.backgroundViewForIndex(self, index: index)
+                    if let bk = background {
+                        self.spManager.backgrounds.append(bk)
+                        self.spManager.inView?.addSubview(bk)
+                        self.spDelegate?.spBackgroundDidAddedToView(self, self.spManager, bk, index)
+                    }
+                }
+                self.spDelegate?.spBackgroundDidAddedAll(self, self.spManager)
+            }else{
+                /// 默认背景为UIButton,如此背景被替换则需要使用者自己实现背景点击事件
+                if self.spManager.param.backgroundView != nil{
+                    self.spManager.param.backgroundView?.alpha = 0.0
+                    self.spManager.param.backgroundView?.frame = self.spManager.inView?.bounds ?? sb
+                    if let bk = self.spManager.param.backgroundView as? UIButton {
+                        bk.addTarget(self, action: #selector(defaultBackgroundClick(ins:)), for: .touchUpInside)
+                    }
+                    self.spManager.inView?.addSubview(self.spManager.param.backgroundView!)
+                    UIView.animate(withDuration: self.spManager.param.duration, delay: self.spManager.param.delay, options: UIViewAnimationOptions.curveEaseOut) {
+                        self.spManager.param.backgroundView?.alpha = 1.0
+                        self.spDelegate?.spDefaultBackgroundAnimationDidRun(self, self.spManager)
+                    } completion: { (finish) in}
+                    self.spDelegate?.spDefaultBackgroundDidAddedToViewAndCommited(self, self.spManager)
+                }
+            }
+        }
+        
         /// 处理图层
         if animations.count > 0 || maskAnimations.count > 0 {
             if self.superview != nil{
@@ -556,41 +600,6 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         self.spDelegate?.spDidCommited(self, self.spManager)
         
         
-        /// 处理背景
-        if self.spManager.step == .show{
-        
-            self.spDelegate?.spWillDoBackground(self, self.spManager)
-            
-            let backgroundCount = self.spBackgroundDelegate?.backgroundCount(self) ?? 0
-            
-            /// 优先使用自定义多背景,如未使用,则使用默认背景
-            if backgroundCount > 0 {
-                for index in 0..<backgroundCount {
-                    let background = self.spBackgroundDelegate?.backgroundViewForIndex(self, index: index)
-                    if let bk = background {
-                        self.spManager.backgrounds.append(bk)
-                        self.spManager.inView?.addSubview(bk)
-                        self.spDelegate?.spBackgroundDidAddedToView(self, self.spManager, bk, index)
-                    }
-                }
-                self.spDelegate?.spBackgroundDidAddedAll(self, self.spManager)
-            }else{
-                /// 默认背景为UIButton,如此背景被替换则需要使用者自己实现背景点击事件
-                if self.spManager.param.backgroundView != nil{
-                    self.spManager.param.backgroundView?.alpha = 0.0
-                    self.spManager.param.backgroundView?.frame = self.spManager.inView?.bounds ?? sb
-                    if let bk = self.spManager.param.backgroundView as? UIButton {
-                        bk.addTarget(self, action: #selector(defaultBackgroundClick(ins:)), for: .touchUpInside)
-                    }
-                    self.spManager.inView?.addSubview(self.spManager.param.backgroundView!)
-                    UIView.animate(withDuration: self.spManager.param.duration, delay: self.spManager.param.delay, options: UIViewAnimationOptions.curveEaseOut) {
-                        self.spManager.param.backgroundView?.alpha = 1.0
-                        self.spDelegate?.spDefaultBackgroundAnimationDidRun(self, self.spManager)
-                    } completion: { (finish) in}
-                    self.spDelegate?.spDefaultBackgroundDidAddedToViewAndCommited(self, self.spManager)
-                }
-            }
-        }
     }
     
     /// 默认背景点击
