@@ -21,6 +21,12 @@ class TestModel: NSObject {
     }
 }
 
+let sb = UIScreen.main.bounds
+let sbw = UIScreen.main.bounds.width
+let sbh = UIScreen.main.bounds.height
+let sbwhalf = UIScreen.main.bounds.width * 0.5
+let sbhhalf = UIScreen.main.bounds.height * 0.5
+
 class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate {
     
    
@@ -40,7 +46,7 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
         
         let base = TestModel.init("基础", ["无动画","渐隐","滑动0","滑动1","缩放","折叠","泡泡","旋转:XYZ","遮罩"])
         let group = TestModel.init("多种自由组合示例", ["渐隐+滑动","滑动+缩放","渐隐+滑动+缩放","滑动+折叠","渐隐泡泡","旋转Z","旋转+遮罩","波纹遮罩"])
-        let custom = TestModel.init("基础自定义和扩展自定义", ["参数自定义示例0","参数自定义示例1","参数自定义示例2","扩展自定义0","扩展自定义1","扩展自定义2"])
+        let custom = TestModel.init("基础自定义和扩展自定义", ["自定义背景","参数自定义示例1","参数自定义示例2","扩展自定义0","扩展自定义1","扩展自定义2"])
         
         self.dataSource.append(base)
         self.dataSource.append(group)
@@ -88,7 +94,7 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
         let name = model.data[indexPath.row]
         
         let param = SPParam.init()
-        param.duration = 0.5
+        param.duration = 1.5
         
         var popupView:APopupView? = nil
         if name == "无动画" {
@@ -235,11 +241,8 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
             }).finish(SPParam.init(1.5))
             
         }else if name == "波纹遮罩" {
-            
-            
             popupView = APopupView.creat("popup-2")
             popupView?.spshow().spMaskAnimation { (param) in
-                
                 let ss = param.target?.bounds.size ?? CGSize.init()
                 var paths:[UIBezierPath] = []
                 
@@ -260,6 +263,14 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
                 
             }.finish(SPParam.init(1.5))
             
+        }else if name == "自定义背景" {
+            
+            popupView = APopupView.creat("popup-3")
+            popupView?.spshow().spSlideAnimation { (param) in
+                param.slideDirection = .toBottom
+                param.to = CGPoint.init(x: sbw * 0.5, y: 90)
+            }.finish(param)
+            
         }
         
         let tapGes = UITapGestureRecognizer.init(target: self, action: #selector(popupViewTapGes(ins:)))
@@ -270,22 +281,12 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
     @objc func popupViewTapGes(ins:UITapGestureRecognizer){
         print("点击弹出")
         if let view = ins.view {
-            view.sphide().spSlideAnimation { (param) in
+            view.sphide().spSlideAnimation({ (param) in
                 param.slideDirection = .toBottom
-            }.finish()
+            }).finish(SPParam.init(1.5))
         }
     }
     
-    //1.滑动时offset有问题
-    //2.考虑隐藏时动画不同的问题
-    //3.缩放动画和spring不能共存
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        
-
-        
-        self.showed = !self.showed
-    }
-
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.

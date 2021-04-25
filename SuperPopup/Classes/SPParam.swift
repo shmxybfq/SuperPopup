@@ -48,6 +48,7 @@ public class SPFoldParam:SPBaseParam{
     public var targetSize:CGSize = CGSize.zero
     // 展开方向
     public var unfoldDirection:SPEightDirection = .none
+    
 }
 
 public class SPScaleParam:SPBaseParam{
@@ -57,6 +58,8 @@ public class SPScaleParam:SPBaseParam{
     public var to:CGFloat = 1.0
     // 是否模仿系统alert弹窗效果
     public var spring:Bool = false
+    //
+    public var values : [CGFloat] = []
 }
 
 

@@ -7,6 +7,8 @@
 //
 
 import UIKit
+import SuperPopup
+
 
 class APopupView: UIView {
     
@@ -85,7 +87,44 @@ class APopupView: UIView {
     
     
     override func backgroundTouch(_ spview: UIView, _ background: UIView) -> Bool {
-        return false
+        return true
+    }
+    
+    override func backgroundCount(_ spview: UIView) -> Int {
+        return 9
+    }
+
+    override func backgroundViewForIndex(_ spview: UIView, index: Int) -> UIView {
+        let r = Double(arc4random_uniform(255)) / 255.0
+        let g = Double(arc4random_uniform(255)) / 255.0
+        let b = Double(arc4random_uniform(255)) / 255.0
+        let button = UIButton.init(type: .custom)
+        button.backgroundColor = UIColor.init(red: CGFloat(r), green: CGFloat(g), blue: CGFloat(b), alpha: 1)
+        let x = CGFloat(index % 3) * (sbw / 3.0)
+        let y = CGFloat(index / 3) * (sbh / 3.0)
+        let w = sbw / 3.0
+        let h = sbh / 3.0
+        button.frame = CGRect.init(x: x, y: y, width: w, height: h)
+        button.alpha = 0
+        let param = SPParam.init(1,CGPoint.init(),Double(index) * 0.1)
+        param.backgroundView = nil
+        button.spshow().spScaleAnimation().spAlphaAnimation().finish(param)
+        return button
+    }
+
+    override func spDidCommited(_ spview: UIView, _ manager: SPManager) {
+        if spview == self && manager.step == .hide {
+            for (index,button) in manager.backgrounds.reversed().enumerated() {
+                let param = SPParam.init(1,CGPoint.init(),Double(index) * 0.1)
+                param.backgroundView = nil
+                
+                //button.sphide().spScaleAnimation().finish(param)
+                //button.sphide().spFoldAnimation().finish()
+                button.sphide().spSlideAnimation({ (param) in
+                    param.slideDirection = .toBottom
+                }).finish(param)
+            }
+        }
     }
 
 }
