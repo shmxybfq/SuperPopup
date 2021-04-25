@@ -96,7 +96,7 @@ public class SPBaseParam:NSObject{
 
 public class SPParam:NSObject{
     // 动画时间
-    public var duration : Double = 0.25
+    public var duration : Double = 0.3
     // 位置偏移量
     public var offset : CGPoint = CGPoint.zero
     // 延时
@@ -109,7 +109,7 @@ public class SPParam:NSObject{
     }();
     
     /// 选择类型ui-初始化方法
-    public init(_ duration:Double = 0.25,_ offset:CGPoint = CGPoint.zero,_ delay:TimeInterval = 0.0) {
+    public init(_ duration:Double = 0.3,_ offset:CGPoint = CGPoint.zero,_ delay:TimeInterval = 0.0) {
         super.init()
         self.duration = duration
         self.offset = offset

@@ -289,7 +289,9 @@ public class SPManager:NSObject{
     /// 容器视图
     public var inView : UIView? = UIApplication.shared.keyWindow
     /// 弹窗参数
-    var param : SPParam = SPParam.init()
+    var showParam : SPParam = SPParam.init()
+    /// 弹窗参数
+    var hideParam : SPParam = SPParam.init()
     
     /// 打包动画对象数组
     var packageParams = [Any]()
@@ -441,8 +443,20 @@ public class SPManager:NSObject{
     
     /// 打包完成: 调用打包动画链后需要调用打包完成开始执行动画
     /// - Parameter param: 弹窗参数,控制弹窗一些基本参数,可查看参数中的属性
-    public func finish(_ param:SPParam = SPParam.init()) {
-        self.param = param
+    public func finish(_ param:SPParam? = SPParam.init(-1)) {
+        if (param?.duration ?? -1) < 0.0 {
+            if self.step == .show {
+                self.showParam = SPParam.init()
+            }else{
+                self.hideParam = SPParam.init(self.showParam.duration)
+            }
+        }else{
+            if self.step == .show {
+                self.showParam = param ?? SPParam.init()
+            }else{
+                self.hideParam = param ?? SPParam.init()
+            }
+        }
         self.target?.spMain(self)
     }
 }
@@ -561,18 +575,27 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
                 self.spDelegate?.spBackgroundDidAddedAll(self, self.spManager)
             }else{
                 /// 默认背景为UIButton,如此背景被替换则需要使用者自己实现背景点击事件
-                if self.spManager.param.backgroundView != nil{
-                    self.spManager.param.backgroundView?.alpha = 0.0
-                    self.spManager.param.backgroundView?.frame = self.spManager.inView?.bounds ?? sb
-                    if let bk = self.spManager.param.backgroundView as? UIButton {
+                if self.spManager.showParam.backgroundView != nil{
+                    self.spManager.showParam.backgroundView?.alpha = 0.0
+                    self.spManager.showParam.backgroundView?.frame = self.spManager.inView?.bounds ?? sb
+                    if let bk = self.spManager.showParam.backgroundView as? UIButton {
                         bk.addTarget(self, action: #selector(defaultBackgroundClick(ins:)), for: .touchUpInside)
                     }
-                    self.spManager.inView?.addSubview(self.spManager.param.backgroundView!)
-                    UIView.animate(withDuration: self.spManager.param.duration, delay: self.spManager.param.delay, options: UIViewAnimationOptions.curveEaseOut) {
-                        self.spManager.param.backgroundView?.alpha = 1.0
+                    self.spManager.inView?.addSubview(self.spManager.showParam.backgroundView!)
+                    UIView.animate(withDuration: self.spManager.showParam.duration, delay: self.spManager.showParam.delay, options: UIViewAnimationOptions.curveEaseOut) {
+                        self.spManager.showParam.backgroundView?.alpha = 1.0
                         self.spDelegate?.spDefaultBackgroundAnimationDidRun(self, self.spManager)
                     } completion: { (finish) in}
                     self.spDelegate?.spDefaultBackgroundDidAddedToViewAndCommited(self, self.spManager)
+                }
+            }
+        }else{
+            
+            if self.spManager.backgrounds.count == 0 && self.spManager.showParam.backgroundView?.superview != nil {
+                UIView.animate(withDuration: self.spManager.hideParam.duration, delay: 0, options: UIViewAnimationOptions.curveEaseOut) {
+                    self.spManager.showParam.backgroundView?.alpha = 0.0
+                } completion: { (finish) in
+                    self.spManager.showParam.backgroundView?.removeFromSuperview()
                 }
             }
         }
@@ -586,13 +609,23 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         }
         
         /// 提交动画
+        var duration = 0.3
+        var delay = 0.0
+        if self.spManager.step == .show {
+            duration = self.spManager.showParam.duration
+            delay = self.spManager.showParam.delay
+        }else{
+            duration = self.spManager.hideParam.duration
+            delay = self.spManager.hideParam.delay
+        }
         if animations.count > 0 {
+            
             let group = self.spAnimationGroup()
             group.animations = animations
-            group.duration = self.spManager.param.duration
+            group.duration = duration
             group.delegate = self
             /// delay调用
-            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + self.spManager.param.delay) {
+            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + delay) {
                 self.spManager.animating = true
                 self.layer.removeAllAnimations()
                 self.layer.add(group, forKey: manager.step == .show ? "spshow" : "sphide")
@@ -603,10 +636,10 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         if maskAnimations.count > 0 {
             let group = self.spAnimationGroup()
             group.animations = maskAnimations
-            group.duration = self.spManager.param.duration
+            group.duration = duration
             group.delegate = self
             /// delay调用
-            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + self.spManager.param.delay) {
+            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + delay) {
                 self.spManager.animating = true
                 self.shapeLayer.removeAllAnimations()
                 self.shapeLayer.add(group, forKey: manager.step == .show ? "spshow" : "sphide")
@@ -624,18 +657,11 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
     @objc func defaultBackgroundClick(ins:UIButton){
         
         /// 使用者可通过重写 backgroundTouch 方法实现背景自定义点击事件
-        if self.spBackgroundDelegate?.backgroundTouch(self, self.spManager.param.backgroundView ?? UIView.init()) == true {
+        if self.spBackgroundDelegate?.backgroundTouch(self, self.spManager.showParam.backgroundView ?? UIView.init()) == true {
             
-            self.spManager.param.delay = 0.0
             self.sphide().spAlphaAnimation { (param) in
                 param.to = 0.0
-            }.finish(self.spManager.param)
-            
-            UIView.animate(withDuration: self.spManager.param.duration, delay: 0, options: UIViewAnimationOptions.curveEaseOut) {
-                self.spManager.param.backgroundView?.alpha = 0.0
-            } completion: { (finish) in
-                self.spManager.param.backgroundView?.removeFromSuperview()
-            }
+            }.finish(self.spManager.hideParam)
         }
     }
     
@@ -664,8 +690,8 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         if self.spManager.step == .show {
             self.spManager.animating = false
         }else{
-            if self.spManager.param.backgroundView?.superview != nil {
-                self.spManager.param.backgroundView?.removeFromSuperview()
+            if self.spManager.showParam.backgroundView?.superview != nil {
+                self.spManager.showParam.backgroundView?.removeFromSuperview()
             }
             self.alpha = 1.0
             self.layer.anchorPoint = CGPoint.init(x: 0.5, y: 0.5)
@@ -758,12 +784,13 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
                 return nil
             }
             
-            var from = self.calculatePosition(slideParam.slideDirection, step, self.spManager.param.offset).0
+            let offset = self.spManager.showParam.offset
+            var from = self.calculatePosition(slideParam.slideDirection, step, offset).0
             if slideParam.from != CGPoint.zero {
                 from = slideParam.from
             }
             
-            var to = self.calculatePosition(slideParam.slideDirection, step, self.spManager.param.offset).1
+            var to = self.calculatePosition(slideParam.slideDirection, step, offset).1
             if slideParam.to != CGPoint.zero {
                 to = slideParam.to
             }
@@ -878,9 +905,15 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
             assert(animation != nil, "please implement customAnimationForIndex method,and return a valid CAAnimation instance")
         }
         
-        animation?.duration = self.spManager.param.duration
+        /// 提交动画
+        var duration = 0.3
+        if self.spManager.step == .show {
+            duration = self.spManager.showParam.duration
+        }else{
+            duration = self.spManager.hideParam.duration
+        }
+        animation?.duration = duration
         animation?.delegate = self
-        animation?.duration = self.spManager.param.duration
     
         return animation
     }

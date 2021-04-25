@@ -15,6 +15,7 @@ class APopupView: UIView {
     }
     
     @IBOutlet weak var imageView: UIImageView!
+    var imageName:String? = ""
     
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -22,8 +23,10 @@ class APopupView: UIView {
     
     public class func creat(_ imgName: String) -> APopupView {
         
+        
         let popup = Bundle.main.loadNibNamed("APopupView", owner: self, options: nil)?.first as! APopupView
         popup.tag = 1999
+        popup.imageName = imgName
         
         let size = UIScreen.main.bounds.size
         var frame = CGRect.zero
@@ -80,5 +83,9 @@ class APopupView: UIView {
         return popup
     }
     
+    
+    override func backgroundTouch(_ spview: UIView, _ background: UIView) -> Bool {
+        return false
+    }
 
 }

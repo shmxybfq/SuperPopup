@@ -79,6 +79,8 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
         return cell!
     }
     
+
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: false)
         
@@ -88,74 +90,74 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
         let param = SPParam.init()
         param.duration = 0.5
         
-        
+        var popupView:APopupView? = nil
         if name == "无动画" {
             
-            let popup = APopupView.creat("popup-1")
-            popup.spshow().spNoAnimation()
+            popupView = APopupView.creat("popup-1")
+            popupView?.spshow().spNoAnimation()
             
         }else if name == "渐隐" {
             
-            let  popup = APopupView.creat("popup-1")
+            popupView = APopupView.creat("popup-1")
             //无任何参数写法:
             //popup?.spshow().spAlphaAnimation().finish()
-            popup.spshow().spAlphaAnimation({ (param) in
+            popupView?.spshow().spAlphaAnimation({ (param) in
                 
             }).finish(param)
             
         }else if name == "滑动0" {
             
-            let  popup = APopupView.creat("popup-1")
+            popupView = APopupView.creat("popup-1")
             //无任何参数写法:默认水平中间位置,从下至上弹出来,刚好显示出来整个view
             //popup?.spshow().spSlideAnimation().finish()
-            popup.spshow().spSlideAnimation({ (param) in
+            popupView?.spshow().spSlideAnimation({ (param) in
                 param.slideDirection = .toTop
                 param.to = param.inView?.center ?? param.to
             }).finish(param)
             
         }else if name == "滑动1" {
             
-            let  popup = APopupView.creat("popup-8")
+            popupView = APopupView.creat("popup-8")
             //无任何参数写法:默认水平中间位置,从下至上弹出来,刚好显示出来整个view
             //popup?.spshow().spSlideAnimation().finish()
-            popup.spshow().spSlideAnimation({ (param) in
+            popupView?.spshow().spSlideAnimation({ (param) in
                 param.slideDirection = .toLeft
                 
             }).finish(param)
             
         }else if name == "缩放" {
             
-            let  popup = APopupView.creat("popup-1")
-            popup.spshow().spScaleAnimation({ (param) in
+            popupView = APopupView.creat("popup-1")
+            popupView?.spshow().spScaleAnimation({ (param) in
                 //param.spring = true
             }).finish(param)
             
         }else if name == "折叠" {
             
-            let  popup = APopupView.creat("popup-5")
-            popup.frame = CGRect.init(x: 0, y: 100, width: sbw, height: sbw / (1242.0 / 948.0))
-            popup.spshow().spFoldAnimation({ (param) in
+            popupView = APopupView.creat("popup-5")
+            popupView?.frame = CGRect.init(x: 0, y: 100, width: sbw, height: sbw / (1242.0 / 948.0))
+            popupView?.spshow().spFoldAnimation({ (param) in
                 
             }).finish(param)
             
         }else if name == "泡泡" {
             
-            let  popup = APopupView.creat("popup-6")
-            popup.spshow().spBubbleAnimation({ (param) in
+            popupView = APopupView.creat("popup-6")
+            popupView?.spshow().spBubbleAnimation({ (param) in
                 
             }).finish(param)
             
         }else if name == "旋转:XYZ" {
             
-            let  popup = APopupView.creat("popup-1")
-            popup.spshow().spRotationAnimation { (param) in
+            popupView = APopupView.creat("popup-1")
+            popupView?.spshow().spRotationAnimation { (param) in
                 param.rotationType = .z
             }.finish(param)
             
         }else if name == "遮罩" {
             
-            let  popup = APopupView.creat("popup-2")
-            popup.spshow().spMaskAnimation { (param) in
+            popupView = APopupView.creat("popup-2")
+            popupView?.spshow().spMaskAnimation { (param) in
                 let size = param.target?.bounds.size
                 param.from = UIBezierPath.init(ovalIn: CGRect.init(x: (size!.width * 0.5), y: (size!.height * 0.5), width: 0, height: 0))
                 param.to = UIBezierPath.init(rect: CGRect.init(origin: CGPoint.zero, size: size!))
@@ -163,8 +165,8 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
             
         }else if name == "渐隐+滑动" {
             
-            let  popup = APopupView.creat("popup-2")
-            popup.spshow().spSlideAnimation({ (param) in
+            popupView = APopupView.creat("popup-2")
+            popupView?.spshow().spSlideAnimation({ (param) in
                 param.slideDirection = .toTop
                 param.to = CGPoint.init(x: sbw * 0.5, y: sbh * 0.5)
             }).spAlphaAnimation({ (param) in
@@ -173,8 +175,8 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
             
         }else if name == "滑动+缩放" {
             
-            let  popup = APopupView.creat("popup-2")
-            popup.spshow().spSlideAnimation({ (param) in
+            popupView = APopupView.creat("popup-2")
+            popupView?.spshow().spSlideAnimation({ (param) in
                 param.slideDirection = .toBottom
                 param.to = CGPoint.init(x: sbw * 0.5, y: sbh * 0.5)
             }).spScaleAnimation({ (param) in
@@ -183,8 +185,8 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
             
         }else if name == "渐隐+滑动+缩放" {
             
-            let  popup = APopupView.creat("popup-2")
-            popup.spshow().spSlideAnimation({ (param) in
+            popupView = APopupView.creat("popup-2")
+            popupView?.spshow().spSlideAnimation({ (param) in
                 param.slideDirection = .toTop
                 param.to = CGPoint.init(x: sbw * 0.5, y: sbh * 0.5)
             }).spAlphaAnimation({ (param) in
@@ -197,8 +199,8 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
             
         }else if name == "滑动+折叠" {
             
-            let  popup = APopupView.creat("popup-2")
-            popup.spshow().spSlideAnimation({ (param) in
+            popupView = APopupView.creat("popup-2")
+            popupView?.spshow().spSlideAnimation({ (param) in
                 param.slideDirection = .toTop
                 param.to = CGPoint.init(x: sbw * 0.5, y: sbh * 0.5)
             }).spFoldAnimation({ (param) in
@@ -208,8 +210,8 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
             
         }else if name == "渐隐泡泡" {
             
-            let  popup = APopupView.creat("popup-6")
-            popup.spshow().spBubbleAnimation({ (param) in
+            popupView = APopupView.creat("popup-6")
+            popupView?.spshow().spBubbleAnimation({ (param) in
                 
             }).spFoldAnimation({ (param) in
                 param.targetSize = (param.target?.frame.size)!
@@ -218,25 +220,25 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
             
         }else if name == "旋转Z" {
             
-            let  popup = APopupView.creat("popup-2")
-            popup.spshow().spRotationAnimation { (param) in
+            popupView = APopupView.creat("popup-2")
+            popupView?.spshow().spRotationAnimation { (param) in
                 
             }.finish(param)
             
         }else if name == "旋转+遮罩" {
             
-            let  popup = APopupView.creat("popup-2")
-            popup.spshow().spRotationAnimation { (param) in
+            popupView = APopupView.creat("popup-2")
+            popupView?.spshow().spRotationAnimation { (param) in
                 
             }.spFoldAnimation({ (param) in
                 
-            }).finish(param)
+            }).finish(SPParam.init(1.5))
             
         }else if name == "波纹遮罩" {
             
             
-            let  popup = APopupView.creat("popup-2")
-            popup.spshow().spMaskAnimation { (param) in
+            popupView = APopupView.creat("popup-2")
+            popupView?.spshow().spMaskAnimation { (param) in
                 
                 let ss = param.target?.bounds.size ?? CGSize.init()
                 var paths:[UIBezierPath] = []
@@ -260,6 +262,18 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
             
         }
         
+        let tapGes = UITapGestureRecognizer.init(target: self, action: #selector(popupViewTapGes(ins:)))
+        popupView?.addGestureRecognizer(tapGes)
+        
+    }
+    
+    @objc func popupViewTapGes(ins:UITapGestureRecognizer){
+        print("点击弹出")
+        if let view = ins.view {
+            view.sphide().spSlideAnimation { (param) in
+                param.slideDirection = .toBottom
+            }.finish()
+        }
     }
     
     //1.滑动时offset有问题
