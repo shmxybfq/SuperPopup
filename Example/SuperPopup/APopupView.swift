@@ -10,6 +10,10 @@ import UIKit
 
 class APopupView: UIView {
     
+    deinit {
+        print("释放======")
+    }
+    
     @IBOutlet weak var imageView: UIImageView!
     
     override func awakeFromNib() {
@@ -17,8 +21,9 @@ class APopupView: UIView {
     }
     
     public class func creat(_ imgName: String) -> APopupView {
-        let popup = Bundle.main.loadNibNamed("APopupView", owner: self, options: nil)?.first as! APopupView
         
+        let popup = Bundle.main.loadNibNamed("APopupView", owner: self, options: nil)?.first as! APopupView
+        popup.tag = 1999
         
         let size = UIScreen.main.bounds.size
         var frame = CGRect.zero
@@ -37,9 +42,9 @@ class APopupView: UIView {
         }else if imgName == "popup-6" {
             frame = CGRect.init(x: 0, y: 0, width: 493 * ratio, height: 485 * ratio)
         }else if imgName == "popup-7" {
-            frame = CGRect.init(x: 0.0, y: 0.0, width: 1123.0 / size.height / 2208.0, height: 2208.0)
+            frame = CGRect.init(x: 0.0, y: 0.0, width: 1123.0 * (size.height / 2208.0), height: size.height)
         }else if imgName == "popup-8" {
-            frame = CGRect.init(x: 0.0, y: 0.0, width: 974.0 / size.height / 2208.0, height: 2208.0)
+            frame = CGRect.init(x: 0.0, y: 0.0, width: 974.0 * (size.height / 2208.0), height: size.height)
         }else if imgName == "popup-9" {
             frame = CGRect.init(x: 0, y: 0, width: size.width, height: size.height)
         }else if imgName == "popup-10" {

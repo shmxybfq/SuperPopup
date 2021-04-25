@@ -326,7 +326,7 @@ public class SPManager:NSObject{
         param.target = self.target
         param.inView = self.inView
         param.type = .alpha
-        param.from = self.target?.alpha ?? 0.0
+        param.from = (self.step == .show) ? 0.0 : self.target?.alpha ?? 0.0
         param.to = (self.step == .show) ? 1.0 : 0.0
         closure(param)
         self.packageParams.append(param)
@@ -415,6 +415,24 @@ public class SPManager:NSObject{
         param.type = .rotation
         param.from = (self.step == .show) ? 0.0 : Double.pi * 2.0
         param.to = (self.step == .show) ? Double.pi * 2.0 : 0.0
+        closure(param)
+        self.packageParams.append(param)
+        self.target?.spDelegate?.spDidPackageAnimation(self.target ?? UIView(), self, param)
+        return self
+    }
+    
+    
+    /// 打包动画: 遮罩动画
+    /// - Parameter closure: 打包自定义动画参数闭包,当前类型动画的自定义可查看闭包参数中的属性
+    /// - Returns: 动画管理类,可链式调用多个动画自由组合
+    public func spMaskAnimation(_ closure: (_ make: SPMaskParam ) -> Void = {_ in }) -> SPManager {
+        let param = SPMaskParam()
+        self.target?.spDelegate?.spWillPackageAnimation(self.target ?? UIView(), self)
+        param.target = self.target
+        param.inView = self.inView
+        param.type = .mask
+        param.from = UIBezierPath.init(rect: CGRect.zero)
+        param.to = UIBezierPath.init(rect: CGRect.zero)
         closure(param)
         self.packageParams.append(param)
         self.target?.spDelegate?.spDidPackageAnimation(self.target ?? UIView(), self, param)
@@ -646,14 +664,14 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         if self.spManager.step == .show {
             self.spManager.animating = false
         }else{
-            self.spManager = SPManager.init()
             if self.spManager.param.backgroundView?.superview != nil {
                 self.spManager.param.backgroundView?.removeFromSuperview()
-                self.removeFromSuperview()
             }
             self.alpha = 1.0
             self.layer.anchorPoint = CGPoint.init(x: 0.5, y: 0.5)
             self.layer.contentsScale = 1.0
+            self.removeFromSuperview()
+            self.spManager = SPManager.init()
         }
     }
     
@@ -841,8 +859,11 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
             
             let fromPath = maskParam.from
             let toPath = maskParam.to
-            
-            animation = CAAnimation.spPathAnimation(values: [fromPath,toPath], duration: maskParam.duration)
+            if maskParam.values.count > 0 {
+                animation = CAAnimation.spPathAnimation(values: maskParam.values, duration: maskParam.duration)
+            }else{
+                animation = CAAnimation.spPathAnimation(values: [fromPath,toPath], duration: maskParam.duration)
+            }
             
         }else if type == .rotation,let rotationParam = param as? SPRotationParam {
 
@@ -1133,7 +1154,7 @@ public extension UIView{
                 to = CGPoint.init(x: selfw * 0.5 + offset.x, y: superh * 0.5 + offset.y)
             }else if slideDirection == .toLeft {
                 from = CGPoint.init(x: superw + selfw, y: superh * 0.5 + offset.y)
-                to = CGPoint.init(x: -selfw * 0.5 + offset.x, y: superh * 0.5 + offset.y)
+                to = CGPoint.init(x: superw - selfw * 0.5 + offset.x, y: superh * 0.5 + offset.y)
             }
             
         }else{

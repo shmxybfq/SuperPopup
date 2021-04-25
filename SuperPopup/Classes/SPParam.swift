@@ -27,7 +27,8 @@ public class SPMaskParam:SPBaseParam{
     public var from : UIBezierPath = UIBezierPath.init()
     //
     public var to : UIBezierPath = UIBezierPath.init()
-    
+    //
+    public var values : [UIBezierPath] = []
 }
 
 public class SPBubbleParam:SPBaseParam{
