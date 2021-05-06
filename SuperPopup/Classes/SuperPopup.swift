@@ -470,6 +470,7 @@ public class SPManager:NSObject{
 /// 弹窗管理类
 public class SPDragManager:NSObject{
     var beginFrame:CGRect = CGRect.zero
+    var endFrame:CGRect = CGRect.zero
     var beginSelfPoint:CGPoint = CGPoint.zero
     var beginSuperPoint:CGPoint = CGPoint.zero
     var dismissDistance:CGFloat = -1
@@ -757,19 +758,29 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
                 let y = selfPoint.y - self.spManager.dragManager.beginSelfPoint.y
                 let absx = fabs(Double(x))
                 let absy = fabs(Double(y))
+                var bframe = self.spManager.dragManager.beginFrame
+                let sframe = self.superview?.frame ?? CGRect.zero
                 ///到达拖动识别长度
                 if absx >= min || absy >= min{
                     if absx > absy {
                         if x > 0.0 {
                             self.spManager.dragManager.direction = .toRight
+                            bframe.origin.x = sframe.size.width
+                            self.spManager.dragManager.endFrame = bframe
                         }else{
                             self.spManager.dragManager.direction = .toLeft
+                            bframe.origin.x = sframe.size.width - bframe.size.width
+                            self.spManager.dragManager.endFrame = bframe
                         }
                     }else{
                         if y > 0.0 {
                             self.spManager.dragManager.direction = .toBottom
+                            bframe.origin.y = sframe.size.height
+                            self.spManager.dragManager.endFrame = bframe
                         }else{
                             self.spManager.dragManager.direction = .toTop
+                            bframe.origin.y = sframe.size.height - bframe.size.height
+                            self.spManager.dragManager.endFrame = bframe
                         }
                     }
                 }
@@ -826,7 +837,48 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
             }
             
         }else{
+            ///计算距离
+            let distanceh = fabs(self.spManager.dragManager.beginFrame.origin.x - self.spManager.dragManager.endFrame.origin.x)
+            let distancev = fabs(self.spManager.dragManager.beginFrame.origin.y - self.spManager.dragManager.endFrame.origin.y)
             
+            let distancex = fabs(self.spManager.dragManager.beginFrame.origin.x - self.frame.origin.x)
+            let distancey = fabs(self.spManager.dragManager.beginFrame.origin.y - self.frame.origin.y)
+            
+            var percent = 1.0
+            if self.spManager.dragManager.direction == .toLeft || self.spManager.dragManager.direction == .toRight{
+                percent = Double(distancex / distanceh)
+            }else if self.spManager.dragManager.direction == .toTop || self.spManager.dragManager.direction == .toBottom{
+                percent = Double(distancey / distancev)
+            }else{
+                
+            }
+            
+            let pd = percent * self.spManager.showParam.duration
+            let dur = percent < 0.3 ? pd : 1.0 - pd
+            
+            if percent > 0.3 {
+
+                let param = SPParam.init(dur)
+                self.sphide().spSlideAnimation {[weak self] (param) in
+                    param.slideDirection = self?.spManager.dragManager.direction ?? .toBottom
+                    param.to = self?.spGetCenter(self?.spManager.dragManager.endFrame ?? CGRect.zero) ?? CGPoint.zero
+                }.finish(param)
+                
+                ///拖动期间不允许点击背景
+                if self.spManager.showParam.backgroundView?.superview != nil{
+                    self.spManager.showParam.backgroundView?.isUserInteractionEnabled = true
+                }
+                
+            }else{
+                UIView.animate(withDuration: dur) {
+                    self.frame = self.spManager.dragManager.beginFrame
+                } completion: { (finish) in
+                    ///拖动期间不允许点击背景
+                    if self.spManager.showParam.backgroundView?.superview != nil{
+                        self.spManager.showParam.backgroundView?.isUserInteractionEnabled = true
+                    }
+                }
+            }
         }
     }
     
@@ -1509,6 +1561,18 @@ public extension UIView{
         let x = center.x - size.width * 0.5
         let y = center.y - size.height * 0.5
         return CGRect.init(origin: CGPoint.init(x: x, y: y), size: size)
+    }
+    
+    
+    /// 通过view的center 和size 计算 view的frame
+    /// - Parameters:
+    ///   - size: view 的size
+    ///   - center: view 的center
+    /// - Returns: view 的frame
+    func spGetCenter(_ frame:CGRect) -> CGPoint{
+        let x = frame.origin.x + frame.size.width * 0.5
+        let y = frame.origin.y + frame.size.height * 0.5
+        return CGPoint.init(x: x, y: y)
     }
 }
 
