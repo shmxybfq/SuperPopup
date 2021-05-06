@@ -91,7 +91,10 @@ class APopupView: UIView {
     }
     
     override func backgroundCount(_ spview: UIView) -> Int {
-        return 9
+        if spview.tag == 2000 {
+            return 9
+        }
+        return 0
     }
 
     override func backgroundViewForIndex(_ spview: UIView, index: Int) -> UIView {
@@ -113,6 +116,9 @@ class APopupView: UIView {
     }
 
     override func spDidCommited(_ spview: UIView, _ manager: SPManager) {
+        if spview.tag == 1999 {
+            return 
+        }
         if spview == self && manager.step == .hide {
             for (index,button) in manager.backgrounds.reversed().enumerated() {
                 let param = SPParam.init(1,CGPoint.init(),Double(index) * 0.1)

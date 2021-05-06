@@ -45,7 +45,7 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
         self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: "UITableViewCell")
         
         let base = TestModel.init("基础", ["无动画","渐隐","滑动0","滑动1","缩放","折叠","泡泡","旋转:XYZ","遮罩"])
-        let group = TestModel.init("多种自由组合示例", ["渐隐+滑动","滑动+缩放","渐隐+滑动+缩放","滑动+折叠","渐隐泡泡","旋转Z","旋转+遮罩","波纹遮罩"])
+        let group = TestModel.init("多种自由组合示例", ["渐隐+滑动","滑动+缩放","渐隐+滑动+缩放+旋转","滑动+折叠","渐隐泡泡","旋转Z","旋转+遮罩","波纹遮罩"])
         let custom = TestModel.init("基础自定义和扩展自定义", ["自定义背景","参数自定义示例1","参数自定义示例2","扩展自定义0","扩展自定义1","扩展自定义2"])
         
         self.dataSource.append(base)
@@ -95,6 +95,7 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
         
         let param = SPParam.init()
         param.duration = 1.5
+        param.dragDirections = [.toBottom,.toRight,.toLeft,.toTop]
         
         var popupView:APopupView? = nil
         if name == "无动画" {
@@ -189,7 +190,7 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
                 
             }).finish(param)
             
-        }else if name == "渐隐+滑动+缩放" {
+        }else if name == "渐隐+滑动+缩放+旋转" {
             
             popupView = APopupView.creat("popup-2")
             popupView?.spshow().spSlideAnimation({ (param) in
@@ -266,6 +267,7 @@ class ViewController: UIViewController,UITableViewDataSource,UITableViewDelegate
         }else if name == "自定义背景" {
             
             popupView = APopupView.creat("popup-3")
+            popupView?.tag = 2000
             popupView?.spshow().spSlideAnimation { (param) in
                 param.slideDirection = .toBottom
                 param.to = CGPoint.init(x: sbw * 0.5, y: 90)

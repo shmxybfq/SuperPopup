@@ -37,7 +37,7 @@ public class SPBubbleParam:SPBaseParam{
     // 泡泡尺寸
     public var targetSize:CGSize = CGSize.zero
     // 泡泡展开方向
-    public var bubbleDirection:SPEightDirection = .toLeftBottom
+    public var bubbleDirection:SPDirection = .toLeftBottom
     // 泡泡形式
     public var bubbleType:SPBubbleType = .scale
 }
@@ -47,7 +47,7 @@ public class SPFoldParam:SPBaseParam{
     // view尺寸
     public var targetSize:CGSize = CGSize.zero
     // 展开方向
-    public var unfoldDirection:SPEightDirection = .none
+    public var unfoldDirection:SPDirection = .none
     
 }
 
@@ -69,7 +69,7 @@ public class SPSlideParam:SPBaseParam{
     // 目的点
     public var to:CGPoint = CGPoint.zero
     // 滑动方向
-    public var slideDirection:SPEightDirection = .none
+    public var slideDirection:SPDirection = .none
 }
 
 
@@ -110,6 +110,11 @@ public class SPParam:NSObject{
         ins.backgroundColor = UIColor.black.withAlphaComponent(0.35)
         return ins;
     }();
+    
+    // 支持的拖动方向
+    public var dragDirections : [SPDirection] = []
+    // 拖拽时是否支持拖拽消失
+    public var dragDismiss : Bool = true
     
     /// 选择类型ui-初始化方法
     public init(_ duration:Double = 0.3,_ offset:CGPoint = CGPoint.zero,_ delay:TimeInterval = 0.0) {

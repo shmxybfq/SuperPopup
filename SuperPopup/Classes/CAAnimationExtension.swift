@@ -13,7 +13,6 @@ private var kAnimationValueKey: Void?
 
 public extension CAAnimation{
   
-    
     var bindTag:String?{
         get {
             return  objc_getAssociatedObject(self, &kAnimationTagKey) as? String

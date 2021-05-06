@@ -67,7 +67,7 @@ public enum SPStepType : Int, Codable{
 }
 
 /// 方向
-public enum SPEightDirection : Int, Codable{
+public enum SPDirection : Int, Codable{
     case none = 0
     case toLeftBottom
     case toLeft
@@ -301,6 +301,7 @@ public class SPManager:NSObject{
     /// 当前是否正在执行动画,同一动画对象不可以在同一时间同时执行多次
     public var animating : Bool = false
 
+    public var dragManager : SPDragManager = SPDragManager.init()
     
     /// 打包动画: 无动画
     /// - Parameter closure: 打包自定义动画参数闭包,当前类型动画的自定义可查看闭包参数中的属性
@@ -466,6 +467,14 @@ public class SPManager:NSObject{
     }
 }
 
+/// 弹窗管理类
+public class SPDragManager:NSObject{
+    var beginFrame:CGRect = CGRect.zero
+    var beginSelfPoint:CGPoint = CGPoint.zero
+    var beginSuperPoint:CGPoint = CGPoint.zero
+    var dismissDistance:CGFloat = -1
+    var direction:SPDirection = .none
+}
 
 extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegate{
   
@@ -692,6 +701,19 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         }
         if self.spManager.step == .show {
             self.spManager.animating = false
+            
+            var dragDirections:[SPDirection] = []
+            for (_,dir) in self.spManager.showParam.dragDirections.enumerated() {
+                if dir == .toTop || dir == .toLeft || dir == .toBottom || dir == .toRight {
+                    dragDirections.append(dir)
+                }
+            }
+            if dragDirections.count > 0 {
+                self.spManager.showParam.dragDirections = dragDirections
+                let dragGes:UIPanGestureRecognizer = UIPanGestureRecognizer.init(target: self, action: #selector(dragGesAction(ins:)))
+                self.addGestureRecognizer(dragGes)
+                self.spDragGes = dragGes
+            }
         }else{
             if self.spManager.showParam.backgroundView?.superview != nil {
                 self.spManager.showParam.backgroundView?.removeFromSuperview()
@@ -704,6 +726,109 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         }
     }
     
+    
+    @objc func dragGesAction(ins:UIPanGestureRecognizer){
+        
+        let selfPoint = ins.location(in: self)
+        let superPoint = ins.location(in: self.superview)
+        
+        if (ins.state == .began) {
+            
+            ///拖动期间不允许点击背景
+            if self.spManager.showParam.backgroundView?.superview != nil{
+                self.spManager.showParam.backgroundView?.isUserInteractionEnabled = false
+            }
+            
+            ///最小拖动距离
+            if (self.spManager.dragManager.dismissDistance <= 0) {
+                self.spManager.dragManager.dismissDistance = 100.0
+            }
+            
+            self.spManager.dragManager.beginSelfPoint = selfPoint
+            self.spManager.dragManager.beginSuperPoint = superPoint
+            self.spManager.dragManager.beginFrame = self.frame
+            
+        }else if(ins.state == .changed){
+            
+            ///识别拖拽方向
+            if self.spManager.dragManager.direction == .none {
+                let min = 10.0
+                let x = selfPoint.x - self.spManager.dragManager.beginSelfPoint.x
+                let y = selfPoint.y - self.spManager.dragManager.beginSelfPoint.y
+                let absx = fabs(Double(x))
+                let absy = fabs(Double(y))
+                ///到达拖动识别长度
+                if absx >= min || absy >= min{
+                    if absx > absy {
+                        if x > 0.0 {
+                            self.spManager.dragManager.direction = .toRight
+                        }else{
+                            self.spManager.dragManager.direction = .toLeft
+                        }
+                    }else{
+                        if y > 0.0 {
+                            self.spManager.dragManager.direction = .toBottom
+                        }else{
+                            self.spManager.dragManager.direction = .toTop
+                        }
+                    }
+                }
+                
+                let dir = self.spManager.dragManager.direction
+                if dir == .toLeft || dir == .toBottom || dir == .toRight || dir == .toTop {
+                    self.spManager.dragManager.beginSelfPoint = selfPoint
+                    self.spManager.dragManager.beginSuperPoint = superPoint
+                }
+                
+            }else{
+                
+                ///拖动
+                let originx = self.spManager.dragManager.beginFrame.origin.x
+                let originy = self.spManager.dragManager.beginFrame.origin.y
+                
+                var x = superPoint.x - self.spManager.dragManager.beginSelfPoint.x
+                var y = superPoint.y - self.spManager.dragManager.beginSelfPoint.y
+                
+                switch self.spManager.dragManager.direction {
+                case .toTop:
+                    x = originx
+                    let distancey = y - originy
+                    if distancey > 0.0 {
+                        y = originy
+                    }
+                    break
+                case .toBottom:
+                    x = originx
+                    let distancey = y - originy
+                    if distancey < 0.0 {
+                        y = originy
+                    }
+                    break
+                case .toLeft:
+                    y = originy
+                    let distancex = x - originx
+                    if distancex > 0.0 {
+                        x = originx
+                    }
+                    break
+                case .toRight:
+                    y = originy
+                    let distancex = x - originx
+                    if distancex < 0.0 {
+                        x = originx
+                    }
+                    break
+                default:
+                    break
+                }
+                self.frame = CGRect.init(x: x, y: y, width: self.frame.size.width, height: self.frame.size.height)
+                
+            }
+            
+        }else{
+            
+        }
+    }
     
     /*
      _______________功能模块分割线_______________________
@@ -1066,6 +1191,7 @@ private let kHideAnimationsKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPat
 private let kEndingKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kEndingKey".hashValue)
 private let kDelegateKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kDelegateKey".hashValue)
 private let kBackgroundsKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kBackgroundsKey".hashValue)
+private let kDragGesKey: UnsafeRawPointer! = UnsafeRawPointer.init(bitPattern: "kDragGesKey".hashValue)
 
 public extension UIView{
     
@@ -1137,7 +1263,15 @@ public extension UIView{
         }
     }
     
-    
+    /// 拖拽手势
+    var spDragGes:UIPanGestureRecognizer?{
+        get {
+            return objc_getAssociatedObject(self, kDragGesKey) as? UIPanGestureRecognizer
+        }
+        set {
+            objc_setAssociatedObject(self, kDragGesKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
+    }
     
     
     /// 动画组容器
@@ -1160,7 +1294,7 @@ public extension UIView{
     ///   - step: 弹窗阶段
     ///   - offset: 位置偏移:偏移和方向有关,如方向为.toTop,偏移的y值即为相对于预期目标点的偏移值
     /// - Returns: .0:起始position point;.1:目标position point
-    func calculatePosition(_ slideDirection:SPEightDirection,_ step:SPStepType,_ offset:CGPoint) -> (CGPoint,CGPoint){
+    func calculatePosition(_ slideDirection:SPDirection,_ step:SPStepType,_ offset:CGPoint) -> (CGPoint,CGPoint){
         
         let selfw:CGFloat = self.frame.size.width
         let selfh:CGFloat = self.frame.size.height
@@ -1212,7 +1346,7 @@ public extension UIView{
     ///   - unfoldDirection: 展开方向
     ///   - unFold: 展开状态
     /// - Returns: 折叠后的目标frame
-    func calculateFold(_ targetSize:CGSize,_ unfoldDirection:SPEightDirection,_ unFold:Bool) -> CGRect{
+    func calculateFold(_ targetSize:CGSize,_ unfoldDirection:SPDirection,_ unFold:Bool) -> CGRect{
         
         let ss = targetSize
         var x:CGFloat = 0.0
@@ -1294,7 +1428,7 @@ public extension UIView{
     ///   - targetSize: 泡泡展开后的尺寸
     ///   - bubbleDirection: 泡泡展开尺寸
     /// - Returns: .0:泡泡的anchorPoint ;.1:泡泡的展开 rect
-    func calculateBubble(_ pinPoint:CGPoint,_ targetSize:CGSize,_ bubbleDirection:SPEightDirection) -> (CGPoint,CGRect){
+    func calculateBubble(_ pinPoint:CGPoint,_ targetSize:CGSize,_ bubbleDirection:SPDirection) -> (CGPoint,CGRect){
         
         let ss = targetSize
         
