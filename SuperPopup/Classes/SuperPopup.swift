@@ -253,6 +253,40 @@ public protocol SPDelegate:NSObjectProtocol {
     ///   - flag: 动画是否已正常完成
     ///   - error: 动画完成错误信息
     func spAnimationDidStop(_ spview:UIView,_ manager:SPManager,_ anim: CAAnimation?, finished flag: Bool,_ error:NSError?)
+    
+    
+    
+    /// 拖拽开始
+    /// - Parameters:
+    ///   - spview: 弹窗
+    ///   - panGes: 手势
+    func spDragBegin(_ spview:UIView,_ panGes:UIPanGestureRecognizer)
+    
+    
+    /// 拖拽方向已识别
+    /// - Parameters:
+    ///   - spview: 弹窗
+    ///   - panGes: 手势
+    func spDragDirectionFinish(_ spview:UIView,_ panGes:UIPanGestureRecognizer)
+    
+    
+    /// 拖拽中
+    /// - Parameters:
+    ///   - spview: 弹窗
+    ///   - panGes: 手势
+    ///   - percent: 拖动比例
+    ///   - distance: 拖动距离
+    func spDragChange(_ spview:UIView,_ panGes:UIPanGestureRecognizer,_ percent:CGFloat,_ distance:CGFloat)
+    
+    
+    /// 拖拽结束
+    /// - Parameters:
+    ///   - spview: 弹窗
+    ///   - panGes: 手势
+    ///   - percent: 拖动比例
+    ///   - distance: 拖动距离
+    func spDragEnd(_ spview:UIView,_ panGes:UIPanGestureRecognizer,_ percent:CGFloat,_ distance:CGFloat) -> Bool
+    
 }
 
 
@@ -467,17 +501,18 @@ public class SPManager:NSObject{
     }
 }
 
-/// 弹窗管理类
+
+/// 拖拽管理
 public class SPDragManager:NSObject{
     var beginFrame:CGRect = CGRect.zero
     var endFrame:CGRect = CGRect.zero
     var beginSelfPoint:CGPoint = CGPoint.zero
     var beginSuperPoint:CGPoint = CGPoint.zero
-    var dismissDistance:CGFloat = -1
     var direction:SPDirection = .none
 }
 
 extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegate{
+
   
     
     /// 显示弹窗入口函数
@@ -703,6 +738,7 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         if self.spManager.step == .show {
             self.spManager.animating = false
             
+            ///拖拽控制
             var dragDirections:[SPDirection] = []
             for (_,dir) in self.spManager.showParam.dragDirections.enumerated() {
                 if dir == .toTop || dir == .toLeft || dir == .toBottom || dir == .toRight {
@@ -715,6 +751,7 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
                 self.addGestureRecognizer(dragGes)
                 self.spDragGes = dragGes
             }
+            
         }else{
             if self.spManager.showParam.backgroundView?.superview != nil {
                 self.spManager.showParam.backgroundView?.removeFromSuperview()
@@ -727,6 +764,73 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         }
     }
     
+    /// 拖拽开始
+    /// - Parameters:
+    ///   - spview: 弹窗
+    ///   - panGes: 手势
+    public func spDragBegin(_ spview: UIView, _ panGes: UIPanGestureRecognizer) {
+        
+    }
+    
+    /// 拖拽方向已识别
+    /// - Parameters:
+    ///   - spview: 弹窗
+    ///   - panGes: 手势
+    public func spDragDirectionFinish(_ spview: UIView, _ panGes: UIPanGestureRecognizer) {
+        
+    }
+    
+    /// 拖拽中
+    /// - Parameters:
+    ///   - spview: 弹窗
+    ///   - panGes: 手势
+    ///   - percent: 拖动比例
+    ///   - distance: 拖动距离
+    public func spDragChange(_ spview: UIView, _ panGes: UIPanGestureRecognizer, _ percent: CGFloat, _ distance: CGFloat) {
+        if self.spManager.showParam.backgroundView?.superview != nil {
+            self.spManager.showParam.backgroundView?.alpha = 1.0 - percent
+        }
+    }
+    
+    /// 拖拽结束
+    /// - Parameters:
+    ///   - spview: 弹窗
+    ///   - panGes: 手势
+    ///   - percent: 拖动比例
+    ///   - distance: 拖动距离
+    public func spDragEnd(_ spview: UIView, _ panGes: UIPanGestureRecognizer, _ percent: CGFloat, _ distance: CGFloat) -> Bool {
+        if self.spManager.showParam.backgroundView?.superview != nil {
+            let pd = percent * CGFloat(self.spManager.showParam.duration)
+            let dur = percent < 0.3 ? pd : 1.0 - pd
+            if percent < 0.3 {
+                UIView.animate(withDuration: TimeInterval(dur)) {
+                    self.spManager.showParam.backgroundView?.alpha = 1.0
+                }
+            }
+        }
+        return true
+    }
+    
+    
+    func spGetDragPercent() -> (CGFloat,CGFloat){
+        ///起拖点和消失点之间的距离
+        let distanceh = fabs(self.spManager.dragManager.beginFrame.origin.x - self.spManager.dragManager.endFrame.origin.x)
+        let distancev = fabs(self.spManager.dragManager.beginFrame.origin.y - self.spManager.dragManager.endFrame.origin.y)
+        
+        ///起拖点和当前点之间的距离
+        let distancex = fabs(self.spManager.dragManager.beginFrame.origin.x - self.frame.origin.x)
+        let distancey = fabs(self.spManager.dragManager.beginFrame.origin.y - self.frame.origin.y)
+        
+        var percent = 1.0
+        if self.spManager.dragManager.direction == .toLeft || self.spManager.dragManager.direction == .toRight{
+            percent = Double(distancex / distanceh)
+        }else if self.spManager.dragManager.direction == .toTop || self.spManager.dragManager.direction == .toBottom{
+            percent = Double(distancey / distancev)
+        }
+    
+        let max:CGFloat = fmax(distancex, distancey)
+        return (CGFloat(percent),max)
+    }
     
     @objc func dragGesAction(ins:UIPanGestureRecognizer){
         
@@ -739,20 +843,19 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
             if self.spManager.showParam.backgroundView?.superview != nil{
                 self.spManager.showParam.backgroundView?.isUserInteractionEnabled = false
             }
-            
-            ///最小拖动距离
-            if (self.spManager.dragManager.dismissDistance <= 0) {
-                self.spManager.dragManager.dismissDistance = 100.0
-            }
-            
+    
             self.spManager.dragManager.beginSelfPoint = selfPoint
             self.spManager.dragManager.beginSuperPoint = superPoint
             self.spManager.dragManager.beginFrame = self.frame
+            
+            ///开始拖拽
+            self.spDelegate?.spDragBegin(self, ins)
             
         }else if(ins.state == .changed){
             
             ///识别拖拽方向
             if self.spManager.dragManager.direction == .none {
+                ///最小手势方向识别距离
                 let min = 10.0
                 let x = selfPoint.x - self.spManager.dragManager.beginSelfPoint.x
                 let y = selfPoint.y - self.spManager.dragManager.beginSelfPoint.y
@@ -760,39 +863,43 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
                 let absy = fabs(Double(y))
                 var bframe = self.spManager.dragManager.beginFrame
                 let sframe = self.superview?.frame ?? CGRect.zero
+                var discernDir:SPDirection = .none
                 ///到达拖动识别长度
                 if absx >= min || absy >= min{
                     if absx > absy {
                         if x > 0.0 {
-                            self.spManager.dragManager.direction = .toRight
+                            discernDir = .toRight
                             bframe.origin.x = sframe.size.width
                             self.spManager.dragManager.endFrame = bframe
                         }else{
-                            self.spManager.dragManager.direction = .toLeft
-                            bframe.origin.x = sframe.size.width - bframe.size.width
+                            discernDir = .toLeft
+                            bframe.origin.x = -bframe.size.width
                             self.spManager.dragManager.endFrame = bframe
                         }
                     }else{
                         if y > 0.0 {
-                            self.spManager.dragManager.direction = .toBottom
+                            discernDir = .toBottom
                             bframe.origin.y = sframe.size.height
                             self.spManager.dragManager.endFrame = bframe
                         }else{
-                            self.spManager.dragManager.direction = .toTop
-                            bframe.origin.y = sframe.size.height - bframe.size.height
+                            discernDir = .toTop
+                            bframe.origin.y = -bframe.size.height
                             self.spManager.dragManager.endFrame = bframe
                         }
                     }
                 }
                 
-                let dir = self.spManager.dragManager.direction
-                if dir == .toLeft || dir == .toBottom || dir == .toRight || dir == .toTop {
+                if self.spManager.showParam.dragDirections.contains(discernDir) {
+                    self.spManager.dragManager.direction = discernDir
                     self.spManager.dragManager.beginSelfPoint = selfPoint
                     self.spManager.dragManager.beginSuperPoint = superPoint
+                    
+                    ///方向确定了
+                    self.spDelegate?.spDragDirectionFinish(self, ins)
                 }
                 
             }else{
-                
+
                 ///拖动
                 let originx = self.spManager.dragManager.beginFrame.origin.x
                 let originy = self.spManager.dragManager.beginFrame.origin.y
@@ -832,50 +939,55 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
                 default:
                     break
                 }
-                self.frame = CGRect.init(x: x, y: y, width: self.frame.size.width, height: self.frame.size.height)
                 
+                let percent:Double = Double(self.spGetDragPercent().0)
+                let distance:Double = Double(self.spGetDragPercent().1)
+                self.frame = CGRect.init(x: x, y: y, width: self.frame.size.width, height: self.frame.size.height)
+                self.spDelegate?.spDragChange(self, ins, CGFloat(percent), CGFloat(distance))
             }
             
         }else{
-            ///计算距离
-            let distanceh = fabs(self.spManager.dragManager.beginFrame.origin.x - self.spManager.dragManager.endFrame.origin.x)
-            let distancev = fabs(self.spManager.dragManager.beginFrame.origin.y - self.spManager.dragManager.endFrame.origin.y)
             
-            let distancex = fabs(self.spManager.dragManager.beginFrame.origin.x - self.frame.origin.x)
-            let distancey = fabs(self.spManager.dragManager.beginFrame.origin.y - self.frame.origin.y)
-            
-            var percent = 1.0
-            if self.spManager.dragManager.direction == .toLeft || self.spManager.dragManager.direction == .toRight{
-                percent = Double(distancex / distanceh)
-            }else if self.spManager.dragManager.direction == .toTop || self.spManager.dragManager.direction == .toBottom{
-                percent = Double(distancey / distancev)
-            }else{
+            if self.spManager.dragManager.direction != .none {
                 
-            }
-            
-            let pd = percent * self.spManager.showParam.duration
-            let dur = percent < 0.3 ? pd : 1.0 - pd
-            
-            if percent > 0.3 {
+                let percent:Double = Double(self.spGetDragPercent().0)
+                let distance:Double = Double(self.spGetDragPercent().1)
+                
+                if self.spDelegate?.spDragEnd(self, ins, CGFloat(percent), CGFloat(distance)) ?? true {
+                    
+                    let pd = percent * self.spManager.showParam.duration
+                    let dur = percent < 0.3 ? pd : 1.0 - pd
+                    
+                    ///拖动超过自动消失距离，自动消失
+                    if percent > 0.3 {
 
-                let param = SPParam.init(dur)
-                self.sphide().spSlideAnimation {[weak self] (param) in
-                    param.slideDirection = self?.spManager.dragManager.direction ?? .toBottom
-                    param.to = self?.spGetCenter(self?.spManager.dragManager.endFrame ?? CGRect.zero) ?? CGPoint.zero
-                }.finish(param)
-                
-                ///拖动期间不允许点击背景
-                if self.spManager.showParam.backgroundView?.superview != nil{
-                    self.spManager.showParam.backgroundView?.isUserInteractionEnabled = true
-                }
-                
-            }else{
-                UIView.animate(withDuration: dur) {
-                    self.frame = self.spManager.dragManager.beginFrame
-                } completion: { (finish) in
-                    ///拖动期间不允许点击背景
-                    if self.spManager.showParam.backgroundView?.superview != nil{
-                        self.spManager.showParam.backgroundView?.isUserInteractionEnabled = true
+                        let param = SPParam.init(dur)
+                        self.sphide().spSlideAnimation {[weak self] (param) in
+                            param.slideDirection = self?.spManager.dragManager.direction ?? .toBottom
+                            param.to = self?.spGetCenter(self?.spManager.dragManager.endFrame ?? CGRect.zero) ?? CGPoint.zero
+                        }.finish(param)
+                        
+                        ///拖动期间不允许点击背景
+                        if self.spManager.showParam.backgroundView?.superview != nil{
+                            self.spManager.showParam.backgroundView?.isUserInteractionEnabled = true
+                        }
+                        
+                        ///结束本次拖动，识别方向置空
+                        self.spManager.dragManager.direction = .none
+                        
+                    }else{
+                        
+                        ///拖动未超过自动消失距离，自动还原原来位置
+                        UIView.animate(withDuration: dur) {
+                            self.frame = self.spManager.dragManager.beginFrame
+                        } completion: { (finish) in
+                            ///拖动期间不允许点击背景
+                            if self.spManager.showParam.backgroundView?.superview != nil{
+                                self.spManager.showParam.backgroundView?.isUserInteractionEnabled = true
+                            }
+                            ///结束本次拖动，识别方向置空
+                            self.spManager.dragManager.direction = .none
+                        }
                     }
                 }
             }
