@@ -90,6 +90,18 @@ public enum SPBubbleType : Int, Codable{
 }
 
 
+/// 过程
+public enum SPProcess : Int, Codable{
+    case none = 0
+    case willShow
+    case didShow
+    case showFinished
+    case willHide
+    case didHide
+    case hideFinished
+}
+
+
 /// 屏幕尺寸
 public let sb: CGRect = UIScreen.main.bounds
 public let sbs: CGSize = sb.size
@@ -312,6 +324,7 @@ public protocol SPBackgroundProtocol:NSObjectProtocol {
 }
 
 
+public typealias SPProgressClosure = (_ view:UIView,_ progress:SPProcess,_ id:String) -> Void
 
 /// 弹窗管理类
 public class SPManager:NSObject{
@@ -336,6 +349,8 @@ public class SPManager:NSObject{
     public var animating : Bool = false
 
     public var dragManager : SPDragManager = SPDragManager.init()
+    
+    var progressClosure : SPProgressClosure?
     
     /// 打包动画: 无动画
     /// - Parameter closure: 打包自定义动画参数闭包,当前类型动画的自定义可查看闭包参数中的属性
@@ -546,6 +561,11 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         return self.spManager
     }
     
+    /// 隐藏弹窗入口函数
+    /// - Returns: 弹窗管理类
+    public func spObserverProgress(_ closure: @escaping SPProgressClosure) {
+        self.spManager.progressClosure = closure
+    }
     
     /// 动画初始化完毕,开始执行
     /// - Parameter manager: 弹窗管理类
@@ -603,7 +623,7 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
         
         
         self.spDelegate?.spWillCommit(self, self.spManager, animations, maskAnimations)
-        
+        self.spManager.progressClosure?(self,.willShow,"")
         
         /// 处理背景
         if self.spManager.step == .show{
@@ -678,6 +698,7 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
                 self.layer.removeAllAnimations()
                 self.layer.add(group, forKey: manager.step == .show ? "spshow" : "sphide")
                 self.spDelegate?.spAnimationDidRun(self, self.spManager, "normal")
+                self.spManager.progressClosure?(self,.didShow,"normal")
             }
         }
         
@@ -692,12 +713,13 @@ extension UIView:SPDataSource,SPDelegate,SPBackgroundProtocol,CAAnimationDelegat
                 self.shapeLayer.removeAllAnimations()
                 self.shapeLayer.add(group, forKey: manager.step == .show ? "spshow" : "sphide")
                 self.spDelegate?.spAnimationDidRun(self, self.spManager, "mask")
+                self.spManager.progressClosure?(self,.didShow,"mask")
             }
         }
         
         /// 动画已操作提交但可能由于延时调用而未被真正执行
         self.spDelegate?.spDidCommited(self, self.spManager)
-        
+        self.spManager.progressClosure?(self,.didShow,"")
         
     }
     
